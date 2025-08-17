@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { personalData, education, certificates } from '@/lib/data';
 import { GraduationCap, ShieldCheck } from 'lucide-react';
+import { ProfileCard } from '@/components/profile-card';
 
 export function AboutSection() {
   return (
@@ -16,17 +17,14 @@ export function AboutSection() {
       </div>
       <div className="grid md:grid-cols-3 gap-8 items-start">
         <div className="md:col-span-2">
-           <Card className="bg-card/50 border-primary/20">
-             <CardContent className="pt-6">
-                <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-                  <Avatar className="w-24 h-24 border-2 border-primary">
-                    <AvatarImage src="https://github.com/modhack2003.png" alt={personalData.name} />
-                    <AvatarFallback>{personalData.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <p className="text-muted-foreground font-body">{personalData.bio}</p>
-                </div>
-            </CardContent>
-           </Card>
+          <ProfileCard 
+            name={personalData.name}
+            title={personalData.title}
+            bio={personalData.bio}
+            avatarUrl="https://github.com/modhack2003.png"
+            githubUrl={personalData.github}
+            linkedinUrl={personalData.linkedin}
+          />
         </div>
         <div className="space-y-6">
           <Card className="bg-card/50 border-primary/20">
