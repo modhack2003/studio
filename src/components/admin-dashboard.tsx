@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { personalData, projects, certificates, education } from '@/lib/data';
-import { User, Briefcase, Award, GraduationCap, FileText } from 'lucide-react';
+import { personalData, projects, certificates, education, skills } from '@/lib/data';
+import { User, Briefcase, Award, GraduationCap, FileText, Wrench } from 'lucide-react';
 import PixelCard from './pixel-card';
 
 export function AdminDashboard() {
@@ -31,11 +31,12 @@ export function AdminDashboard() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-background/50">
+          <TabsList className="grid w-full grid-cols-6 bg-background/50">
             <TabsTrigger value="profile"><User className="w-4 h-4 mr-2"/>Profile</TabsTrigger>
             <TabsTrigger value="projects"><Briefcase className="w-4 h-4 mr-2"/>Projects</TabsTrigger>
             <TabsTrigger value="certificates"><Award className="w-4 h-4 mr-2"/>Certificates</TabsTrigger>
             <TabsTrigger value="education"><GraduationCap className="w-4 h-4 mr-2"/>Study</TabsTrigger>
+            <TabsTrigger value="skills"><Wrench className="w-4 h-4 mr-2"/>Skills</TabsTrigger>
             <TabsTrigger value="resume"><FileText className="w-4 h-4 mr-2"/>Resume</TabsTrigger>
           </TabsList>
           
@@ -143,6 +144,32 @@ export function AdminDashboard() {
                   <Button className="m-6 mt-0" onClick={() => handleSave('Education')}>Save Changes</Button>
                 </div>
               </PixelCard>
+          </TabsContent>
+
+          <TabsContent value="skills" className="mt-4">
+            <PixelCard>
+              <div className="bg-background/80 p-6 rounded-sm">
+                <CardHeader>
+                  <CardTitle>Skills & Expertise</CardTitle>
+                  <CardDescription>Update your skills. Use comma-separated values.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="languages">Languages</Label>
+                    <Textarea id="languages" defaultValue={skills.languages.join(', ')} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tools">Tools & Technologies</Label>
+                    <Textarea id="tools" defaultValue={skills.tools.join(', ')} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="areas">Areas of Expertise</Label>
+                    <Textarea id="areas" defaultValue={skills.areas.join(', ')} />
+                  </div>
+                </CardContent>
+                <Button className="m-6 mt-0" onClick={() => handleSave('Skills')}>Save Changes</Button>
+              </div>
+            </PixelCard>
           </TabsContent>
           
           <TabsContent value="resume" className="mt-4">
