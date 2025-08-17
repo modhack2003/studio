@@ -31,7 +31,7 @@ export function AdminDashboard() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 bg-background/50">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 bg-background/50">
             <TabsTrigger value="profile"><User className="w-4 h-4 mr-2"/>Profile</TabsTrigger>
             <TabsTrigger value="projects"><Briefcase className="w-4 h-4 mr-2"/>Projects</TabsTrigger>
             <TabsTrigger value="certificates"><Award className="w-4 h-4 mr-2"/>Certificates</TabsTrigger>
