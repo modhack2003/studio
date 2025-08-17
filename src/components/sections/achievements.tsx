@@ -1,12 +1,12 @@
 'use client'
 
-import type { GithubAchievementsFetchOutput } from '@/ai/flows/github-achievements-fetch';
+import type { GithubAchievementsFetchOutput } from '@/ai/flows/summarize-flow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Trophy } from 'lucide-react';
 
 interface AchievementsSectionProps {
-    achievementsData: GithubAchievementsFetchOutput | null;
+    achievementsData: {achievements: string} | null;
 }
 
 export function AchievementsSection({ achievementsData }: AchievementsSectionProps) {

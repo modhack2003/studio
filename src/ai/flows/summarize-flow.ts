@@ -1,10 +1,10 @@
 'use server';
 /**
- * @fileOverview A flow to fetch achievements, including trophies, from a GitHub profile using generative AI.
+ * @fileOverview A flow to summarize a given context using generative AI.
  *
- * - githubAchievementsFetch - A function that handles fetching achievements from a GitHub profile.
- * - GithubAchievementsFetchInput - The input type for the githubAchievementsFetch function.
- * - GithubAchievementsFetchOutput - The return type for the githubAchievementsFetch function.
+ * - summarize - A function that handles the summarization process.
+ * - SummarizeInput - The input type for the summarize function.
+ * - SummarizeOutput - The return type for the summarize function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -13,7 +13,7 @@ import {z} from 'genkit';
 const SummarizeInputSchema = z.object({
   context: z
     .string()
-    .describe('The context for the summarization task.'),
+    .describe('The context to be summarized.'),
 });
 export type SummarizeInput = z.infer<typeof SummarizeInputSchema>;
 
@@ -32,7 +32,7 @@ const prompt = ai.definePrompt({
   name: 'summarizePrompt',
   input: {schema: SummarizeInputSchema},
   output: {schema: SummarizeOutputSchema},
-  prompt: `You are an AI assistant. Summarize the following context:
+  prompt: `You are an AI assistant. Summarize the following context, highlighting key achievements and trophies if applicable:
   {{{context}}}
   Summary:`,
 });

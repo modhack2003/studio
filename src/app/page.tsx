@@ -8,11 +8,11 @@ import { SkillsSection } from "@/components/sections/skills";
 import { ContactSection } from "@/components/sections/contact";
 import { Separator } from "@/components/ui/separator";
 
-import { githubAchievementsFetch, type GithubAchievementsFetchOutput } from "@/ai/flows/github-achievements-fetch";
+import { summarize, type SummarizeOutput } from "@/ai/flows/summarize-flow";
 
-async function getGithubAchievements(): Promise<GithubAchievementsFetchOutput | null> {
+async function getGithubAchievements(): Promise<SummarizeOutput | null> {
   try {
-    const achievements = await githubAchievementsFetch({ githubProfileUrl: 'https://github.com/modhack2003' });
+    const achievements = await summarize({ context: 'GitHub profile for https://github.com/modhack2003' });
     return achievements;
   } catch (error) {
     console.error("Failed to fetch GitHub achievements:", error);
@@ -22,6 +22,7 @@ async function getGithubAchievements(): Promise<GithubAchievementsFetchOutput | 
 
 export default async function Home() {
   const achievementsData = await getGithubAchievements();
+  const achievements = achievementsData ? { achievements: achievementsData.summary } : null;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -31,7 +32,7 @@ export default async function Home() {
         <div className="container mx-auto px-4 py-16 sm:py-24 space-y-24">
           <AboutSection />
           <Separator className="my-8 bg-primary/20" />
-          <AchievementsSection achievementsData={achievementsData} />
+          <AchievementsSection achievementsData={achievements} />
           <Separator className="my-8 bg-primary/20" />
           <ProjectsSection />
           <Separator className="my-8 bg-primary/20" />
