@@ -1,10 +1,25 @@
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { personalData, education, certificates } from '@/lib/data';
-import { GraduationCap, ShieldCheck } from 'lucide-react';
-import { ProfileCard } from '@/components/profile-card';
+import { GraduationCap, ShieldCheck, Github, Linkedin } from 'lucide-react';
+import TiltedCard from '@/components/profile-card';
 import PixelCard from '../pixel-card';
 
 export function AboutSection() {
+  const overlayContent = (
+    <div className="absolute inset-0 bg-black/70 flex flex-col justify-end p-6 text-white rounded-[15px]">
+      <h3 className="text-xl font-bold">{personalData.name}</h3>
+      <p className="text-sm">{personalData.bio}</p>
+      <div className="flex gap-4 mt-4">
+        <a href={personalData.github} target="_blank" rel="noopener noreferrer">
+          <Github />
+        </a>
+        <a href={personalData.linkedin} target="_blank" rel="noopener noreferrer">
+          <Linkedin />
+        </a>
+      </div>
+    </div>
+  );
+
   return (
     <section id="about" className="space-y-12">
       <div className="text-center">
@@ -17,13 +32,17 @@ export function AboutSection() {
       </div>
       <div className="grid md:grid-cols-3 gap-8 items-start">
         <div className="md:col-span-2">
-          <ProfileCard 
-            name={personalData.name}
-            title={personalData.title}
-            bio={personalData.bio}
-            avatarUrl="https://github.com/modhack2003.png"
-            githubUrl={personalData.github}
-            linkedinUrl={personalData.linkedin}
+          <TiltedCard 
+            imageSrc="https://github.com/modhack2003.png"
+            altText={personalData.name}
+            captionText={personalData.title}
+            containerHeight="400px"
+            imageWidth="400px"
+            imageHeight="400px"
+            mobileImageWidth="300px"
+            mobileImageHeight="300px"
+            overlayContent={overlayContent}
+            displayOverlayContent={true}
           />
         </div>
         <div className="space-y-6">
