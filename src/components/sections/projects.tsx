@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { projects } from '@/lib/data';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { PixelCard } from '../pixel-card';
+import PixelCard from '../pixel-card';
 
 export function ProjectsSection() {
   return (
@@ -20,7 +20,7 @@ export function ProjectsSection() {
       <div className="grid sm:grid-cols-2 lg:grid-cols-2 gap-6">
         {projects.map((project) => (
           <PixelCard key={project.title}>
-            <div className="flex flex-col bg-card p-6 rounded-sm h-full hover:border-primary/50 transition-colors">
+            <div className="flex flex-col bg-transparent p-6 rounded-sm h-full">
               <CardHeader>
                 <CardTitle className="font-code text-primary">{project.title}</CardTitle>
                 <CardDescription>{project.description}</CardDescription>

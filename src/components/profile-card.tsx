@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Github, Linkedin } from 'lucide-react';
 import { DecryptedText } from './decrypted-text';
-import { PixelCard } from './pixel-card';
+import PixelCard from './pixel-card';
 
 interface ProfileCardProps {
     name: string;
@@ -19,8 +19,8 @@ interface ProfileCardProps {
 
 export function ProfileCard({ name, title, bio, avatarUrl, githubUrl, linkedinUrl }: ProfileCardProps) {
     return (
-        <PixelCard className="backdrop-blur-sm overflow-hidden">
-            <div className="bg-card p-6 rounded-sm">
+        <PixelCard className="backdrop-blur-sm overflow-hidden w-full h-full">
+            <div className="bg-transparent p-6 rounded-sm">
                 <div className="h-24 bg-primary/10" />
                 <CardContent className="p-6">
                     <div className="flex flex-col md:flex-row items-center -mt-16">

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { KeyRound } from 'lucide-react';
-import { PixelCard } from './pixel-card';
+import PixelCard from './pixel-card';
 
 interface PinFormProps {
   onSuccess: () => void;
@@ -44,8 +44,8 @@ export function PinForm({ onSuccess }: PinFormProps) {
 
   return (
     <div className="mx-auto max-w-sm">
-        <PixelCard>
-            <div className="bg-card p-6 rounded-sm">
+        <PixelCard className="w-full">
+            <div className="bg-transparent p-6 rounded-sm">
               <form onSubmit={handleSubmit}>
                   <CardHeader className="text-center">
                       <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit">

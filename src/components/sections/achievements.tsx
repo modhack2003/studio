@@ -3,7 +3,7 @@
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Trophy } from 'lucide-react';
-import { PixelCard } from '../pixel-card';
+import PixelCard from '../pixel-card';
 
 interface AchievementsSectionProps {
     achievementsData: {achievements: string} | null;
@@ -21,7 +21,7 @@ export function AchievementsSection({ achievementsData }: AchievementsSectionPro
             </p>
         </div>
       <PixelCard>
-        <div className="bg-card p-6 rounded-sm">
+        <div className="bg-transparent p-6 rounded-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-code text-lg">
               <Trophy className="text-primary"/>

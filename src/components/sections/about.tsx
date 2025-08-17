@@ -2,7 +2,7 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { personalData, education, certificates } from '@/lib/data';
 import { GraduationCap, ShieldCheck } from 'lucide-react';
 import { ProfileCard } from '@/components/profile-card';
-import { PixelCard } from '../pixel-card';
+import PixelCard from '../pixel-card';
 
 export function AboutSection() {
   return (
@@ -28,7 +28,7 @@ export function AboutSection() {
         </div>
         <div className="space-y-6">
           <PixelCard>
-            <div className="bg-card p-6 rounded-sm">
+            <div className="bg-transparent p-6 rounded-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 font-code text-lg">
                   <GraduationCap className="text-primary"/>
@@ -47,7 +47,7 @@ export function AboutSection() {
             </div>
           </PixelCard>
            <PixelCard>
-            <div className="bg-card p-6 rounded-sm">
+            <div className="bg-transparent p-6 rounded-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 font-code text-lg">
                   <ShieldCheck className="text-primary"/>

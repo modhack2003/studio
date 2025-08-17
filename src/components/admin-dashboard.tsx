@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { personalData, projects, certificates, education } from '@/lib/data';
 import { User, Briefcase, Award, GraduationCap, FileText } from 'lucide-react';
-import { PixelCard } from './pixel-card';
+import PixelCard from './pixel-card';
 
 export function AdminDashboard() {
   const { toast } = useToast();
@@ -23,15 +23,15 @@ export function AdminDashboard() {
   };
   
   return (
-    <PixelCard>
-      <div className="bg-card p-6 rounded-sm">
+    <PixelCard className="w-full">
+      <div className="bg-transparent p-6 rounded-sm">
       <CardHeader>
         <CardTitle className="text-3xl text-glow font-headline">Admin Dashboard</CardTitle>
         <CardDescription>Manage your portfolio content from this centralized interface.</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-background">
+          <TabsList className="grid w-full grid-cols-5 bg-background/50">
             <TabsTrigger value="profile"><User className="w-4 h-4 mr-2"/>Profile</TabsTrigger>
             <TabsTrigger value="projects"><Briefcase className="w-4 h-4 mr-2"/>Projects</TabsTrigger>
             <TabsTrigger value="certificates"><Award className="w-4 h-4 mr-2"/>Certificates</TabsTrigger>
@@ -41,7 +41,7 @@ export function AdminDashboard() {
           
           <TabsContent value="profile" className="mt-4">
             <PixelCard>
-              <div className="bg-background p-6 rounded-sm">
+              <div className="bg-background/80 p-6 rounded-sm">
                 <CardHeader>
                   <CardTitle>Contact & Bio</CardTitle>
                   <CardDescription>Update your personal information.</CardDescription>
@@ -75,7 +75,7 @@ export function AdminDashboard() {
 
           <TabsContent value="projects" className="mt-4">
             <PixelCard>
-            <div className="bg-background p-6 rounded-sm">
+            <div className="bg-background/80 p-6 rounded-sm">
               <CardHeader>
                 <CardTitle>Projects</CardTitle>
                 <CardDescription>Add or edit your project listings.</CardDescription>
@@ -99,7 +99,7 @@ export function AdminDashboard() {
           
             <TabsContent value="certificates" className="mt-4">
             <PixelCard>
-            <div className="bg-background p-6 rounded-sm">
+            <div className="bg-background/80 p-6 rounded-sm">
               <CardHeader>
                 <CardTitle>Certificates</CardTitle>
                 <CardDescription>Manage your certifications.</CardDescription>
@@ -123,7 +123,7 @@ export function AdminDashboard() {
 
             <TabsContent value="education" className="mt-4">
               <PixelCard>
-                <div className="bg-background p-6 rounded-sm">
+                <div className="bg-background/80 p-6 rounded-sm">
                   <CardHeader>
                     <CardTitle>Study Information</CardTitle>
                     <CardDescription>Update your educational background.</CardDescription>
@@ -147,7 +147,7 @@ export function AdminDashboard() {
           
           <TabsContent value="resume" className="mt-4">
             <PixelCard>
-              <div className="bg-background p-6 rounded-sm">
+              <div className="bg-background/80 p-6 rounded-sm">
                 <CardHeader>
                   <CardTitle>Resume PDF</CardTitle>
                   <CardDescription>Upload a new version of your resume.</CardDescription>
