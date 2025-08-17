@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { personalData, projects, certificates, education } from '@/lib/data';
 import { User, Briefcase, Award, GraduationCap, FileText } from 'lucide-react';
+import { PixelCard } from './pixel-card';
 
 export function AdminDashboard() {
   const { toast } = useToast();
@@ -22,7 +23,8 @@ export function AdminDashboard() {
   };
   
   return (
-    <Card className="bg-card/50 border-primary/20">
+    <PixelCard>
+      <div className="bg-card p-6 rounded-sm">
       <CardHeader>
         <CardTitle className="text-3xl text-glow font-headline">Admin Dashboard</CardTitle>
         <CardDescription>Manage your portfolio content from this centralized interface.</CardDescription>
@@ -38,39 +40,42 @@ export function AdminDashboard() {
           </TabsList>
           
           <TabsContent value="profile" className="mt-4">
-            <Card className="bg-background">
-              <CardHeader>
-                <CardTitle>Contact & Bio</CardTitle>
-                <CardDescription>Update your personal information.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input id="name" defaultValue={personalData.name} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title</Label>
-                  <Input id="title" defaultValue={personalData.title} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
-                  <Textarea id="bio" defaultValue={personalData.bio} className="h-32" />
-                </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="github">GitHub URL</Label>
-                  <Input id="github" defaultValue={personalData.github} />
-                </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="linkedin">LinkedIn URL</Label>
-                  <Input id="linkedin" defaultValue={personalData.linkedin} />
-                </div>
-              </CardContent>
-              <Button className="m-6 mt-0" onClick={() => handleSave('Profile')}>Save Changes</Button>
-            </Card>
+            <PixelCard>
+              <div className="bg-background p-6 rounded-sm">
+                <CardHeader>
+                  <CardTitle>Contact & Bio</CardTitle>
+                  <CardDescription>Update your personal information.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input id="name" defaultValue={personalData.name} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Title</Label>
+                    <Input id="title" defaultValue={personalData.title} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bio">Bio</Label>
+                    <Textarea id="bio" defaultValue={personalData.bio} className="h-32" />
+                  </div>
+                    <div className="space-y-2">
+                    <Label htmlFor="github">GitHub URL</Label>
+                    <Input id="github" defaultValue={personalData.github} />
+                  </div>
+                    <div className="space-y-2">
+                    <Label htmlFor="linkedin">LinkedIn URL</Label>
+                    <Input id="linkedin" defaultValue={personalData.linkedin} />
+                  </div>
+                </CardContent>
+                <Button className="m-6 mt-0" onClick={() => handleSave('Profile')}>Save Changes</Button>
+              </div>
+            </PixelCard>
           </TabsContent>
 
           <TabsContent value="projects" className="mt-4">
-            <Card className="bg-background">
+            <PixelCard>
+            <div className="bg-background p-6 rounded-sm">
               <CardHeader>
                 <CardTitle>Projects</CardTitle>
                 <CardDescription>Add or edit your project listings.</CardDescription>
@@ -82,17 +87,19 @@ export function AdminDashboard() {
                     <Input id={`project-title-${index}`} defaultValue={project.title} />
                     <Label htmlFor={`project-desc-${index}`}>Description</Label>
                     <Textarea id={`project-desc-${index}`} defaultValue={project.description} />
-                     <Label htmlFor={`project-tags-${index}`}>Tags (comma separated)</Label>
+                      <Label htmlFor={`project-tags-${index}`}>Tags (comma separated)</Label>
                     <Input id={`project-tags-${index}`} defaultValue={project.tags.join(', ')} />
                   </div>
                 ))}
               </CardContent>
               <Button className="m-6 mt-0" onClick={() => handleSave('Projects')}>Save Changes</Button>
-            </Card>
+              </div>
+            </PixelCard>
           </TabsContent>
           
-           <TabsContent value="certificates" className="mt-4">
-            <Card className="bg-background">
+            <TabsContent value="certificates" className="mt-4">
+            <PixelCard>
+            <div className="bg-background p-6 rounded-sm">
               <CardHeader>
                 <CardTitle>Certificates</CardTitle>
                 <CardDescription>Manage your certifications.</CardDescription>
@@ -109,51 +116,57 @@ export function AdminDashboard() {
                     </div>
                 ))}
               </CardContent>
-               <Button className="m-6 mt-0" onClick={() => handleSave('Certificates')}>Save Changes</Button>
-            </Card>
+                <Button className="m-6 mt-0" onClick={() => handleSave('Certificates')}>Save Changes</Button>
+                </div>
+            </PixelCard>
           </TabsContent>
 
-           <TabsContent value="education" className="mt-4">
-            <Card className="bg-background">
-              <CardHeader>
-                <CardTitle>Study Information</CardTitle>
-                <CardDescription>Update your educational background.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {education.map((edu, index) => (
-                    <div key={index} className="space-y-2 border-b border-primary/20 pb-4">
-                        <Label htmlFor={`edu-inst-${index}`}>Institution</Label>
-                        <Input id={`edu-inst-${index}`} defaultValue={edu.institution} />
-                        <Label htmlFor={`edu-degree-${index}`}>Degree</Label>
-                        <Input id={`edu-degree-${index}`} defaultValue={edu.degree} />
-                        <Label htmlFor={`edu-duration-${index}`}>Duration</Label>
-                        <Input id={`edu-duration-${index}`} defaultValue={edu.duration} />
-                    </div>
-                ))}
-              </CardContent>
-               <Button className="m-6 mt-0" onClick={() => handleSave('Education')}>Save Changes</Button>
-            </Card>
+            <TabsContent value="education" className="mt-4">
+              <PixelCard>
+                <div className="bg-background p-6 rounded-sm">
+                  <CardHeader>
+                    <CardTitle>Study Information</CardTitle>
+                    <CardDescription>Update your educational background.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {education.map((edu, index) => (
+                        <div key={index} className="space-y-2 border-b border-primary/20 pb-4">
+                            <Label htmlFor={`edu-inst-${index}`}>Institution</Label>
+                            <Input id={`edu-inst-${index}`} defaultValue={edu.institution} />
+                            <Label htmlFor={`edu-degree-${index}`}>Degree</Label>
+                            <Input id={`edu-degree-${index}`} defaultValue={edu.degree} />
+                            <Label htmlFor={`edu-duration-${index}`}>Duration</Label>
+                            <Input id={`edu-duration-${index}`} defaultValue={edu.duration} />
+                        </div>
+                    ))}
+                  </CardContent>
+                  <Button className="m-6 mt-0" onClick={() => handleSave('Education')}>Save Changes</Button>
+                </div>
+              </PixelCard>
           </TabsContent>
           
           <TabsContent value="resume" className="mt-4">
-            <Card className="bg-background">
-              <CardHeader>
-                <CardTitle>Resume PDF</CardTitle>
-                <CardDescription>Upload a new version of your resume.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="resume-file">Resume PDF File</Label>
-                  <Input id="resume-file" type="file" className="file:text-primary file:font-semibold"/>
-                </div>
-                 <p className="text-sm text-muted-foreground">Current file: <Link href={personalData.resumeUrl} className="text-accent underline">{personalData.resumeUrl.split('/').pop()}</Link></p>
-              </CardContent>
-              <Button className="m-6 mt-0" onClick={() => handleSave('Resume')}>Upload New Resume</Button>
-            </Card>
+            <PixelCard>
+              <div className="bg-background p-6 rounded-sm">
+                <CardHeader>
+                  <CardTitle>Resume PDF</CardTitle>
+                  <CardDescription>Upload a new version of your resume.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="resume-file">Resume PDF File</Label>
+                    <Input id="resume-file" type="file" className="file:text-primary file:font-semibold"/>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Current file: <Link href={personalData.resumeUrl} className="text-accent underline">{personalData.resumeUrl.split('/').pop()}</Link></p>
+                </CardContent>
+                <Button className="m-6 mt-0" onClick={() => handleSave('Resume')}>Upload New Resume</Button>
+              </div>
+            </PixelCard>
           </TabsContent>
 
         </Tabs>
       </CardContent>
-    </Card>
+      </div>
+    </PixelCard>
   );
 }

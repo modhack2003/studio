@@ -1,8 +1,8 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { personalData, education, certificates } from '@/lib/data';
 import { GraduationCap, ShieldCheck } from 'lucide-react';
 import { ProfileCard } from '@/components/profile-card';
+import { PixelCard } from '../pixel-card';
 
 export function AboutSection() {
   return (
@@ -27,39 +27,43 @@ export function AboutSection() {
           />
         </div>
         <div className="space-y-6">
-          <Card className="bg-card/50 border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-code text-lg">
-                <GraduationCap className="text-primary"/>
-                Education
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {education.map(edu => (
-                <div key={edu.institution}>
-                  <h3 className="font-semibold">{edu.institution}</h3>
-                  <p className="text-sm text-muted-foreground">{edu.degree}</p>
-                  <p className="text-xs text-muted-foreground/80">{edu.duration}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-           <Card className="bg-card/50 border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-code text-lg">
-                <ShieldCheck className="text-primary"/>
-                Certificates
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {certificates.map(cert => (
-                <div key={cert.name}>
-                  <h3 className="font-semibold text-sm">{cert.name}</h3>
-                  <p className="text-xs text-muted-foreground">{cert.issuer} - {cert.year}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <PixelCard>
+            <div className="bg-card p-6 rounded-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 font-code text-lg">
+                  <GraduationCap className="text-primary"/>
+                  Education
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {education.map(edu => (
+                  <div key={edu.institution}>
+                    <h3 className="font-semibold">{edu.institution}</h3>
+                    <p className="text-sm text-muted-foreground">{edu.degree}</p>
+                    <p className="text-xs text-muted-foreground/80">{edu.duration}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </div>
+          </PixelCard>
+           <PixelCard>
+            <div className="bg-card p-6 rounded-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 font-code text-lg">
+                  <ShieldCheck className="text-primary"/>
+                  Certificates
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {certificates.map(cert => (
+                  <div key={cert.name}>
+                    <h3 className="font-semibold text-sm">{cert.name}</h3>
+                    <p className="text-xs text-muted-foreground">{cert.issuer} - {cert.year}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </div>
+          </PixelCard>
         </div>
       </div>
     </section>

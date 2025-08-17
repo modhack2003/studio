@@ -1,7 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { skills } from '@/lib/data';
 import { Code, Terminal, BrainCircuit } from 'lucide-react';
+import { PixelCard } from '../pixel-card';
 
 const skillSections = [
     { title: 'Languages', icon: Code, items: skills.languages },
@@ -23,7 +24,8 @@ export function SkillsSection() {
 
         <div className="grid md:grid-cols-3 gap-6">
             {skillSections.map(section => (
-                <Card key={section.title} className="bg-card/50 border-primary/20">
+                <PixelCard key={section.title}>
+                  <div className="bg-card p-6 rounded-sm h-full">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 font-code text-lg">
                             <section.icon className="text-primary" />
@@ -37,7 +39,8 @@ export function SkillsSection() {
                             </Badge>
                         ))}
                     </CardContent>
-                </Card>
+                    </div>
+                </PixelCard>
             ))}
         </div>
     </section>
