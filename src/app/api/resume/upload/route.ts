@@ -1,16 +1,12 @@
 
 import { PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
-import formidable from 'formidable';
-import fs from 'fs/promises';
-import path from 'path';
+import { put } from '@vercel/blob'; // New import for Vercel Blob
 
 const prisma = new PrismaClient();
 
 export const config = {
-  api: {
-    bodyParser: false,
-  },
+  runtime: 'edge', // Recommended for Vercel Blob for better performance
 };
 
 export async function POST(request: Request) {
@@ -22,14 +18,15 @@ export async function POST(request: Request) {
       return new NextResponse('No file uploaded', { status: 400 });
     }
 
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    await fs.mkdir(uploadDir, { recursive: true });
+    // Generate a unique file name to prevent collisions
+    const filename = `${Date.now()}-${file.name}`;
 
-    const filePath = path.join(uploadDir, file.name);
-    const fileBuffer = Buffer.from(await file.arrayBuffer());
-    await fs.writeFile(filePath, fileBuffer);
+    // Upload file to Vercel Blob
+    const blob = await put(filename, file, {
+      access: 'public', // Make the file publicly accessible
+    });
 
-    const resumeUrl = `/uploads/${file.name}`;
+    const resumeUrl = blob.url; // Vercel Blob returns the public URL
 
     await prisma.personalData.updateMany({
       data: {
