@@ -1,17 +1,25 @@
+
 import type { Metadata } from "next";
-import { Toaster } from "@/components/ui/toaster"
+import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
+import { PrismaClient } from '@prisma/client';
+import { SiteFooter } from "@/components/site-footer";
+
+const prisma = new PrismaClient();
 
 export const metadata: Metadata = {
   title: "Bikram's Cyber Fortress",
   description: "Portfolio of Bikram Dey, a cybersecurity student.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const personalData = await prisma.personalData.findFirst();
+  const plainPersonalData = JSON.parse(JSON.stringify(personalData));
+
   return (
     <html lang="en" className="dark">
       <head>
@@ -22,6 +30,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         {children}
+        <SiteFooter personalData={plainPersonalData} />
         <Toaster />
       </body>
     </html>

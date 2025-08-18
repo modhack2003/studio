@@ -1,12 +1,18 @@
 import { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { projects } from '@/lib/data';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import PixelCard from '../pixel-card';
 
-export function ProjectsSection() {
+interface Project {
+  title: string;
+  description: string;
+  tags: string[];
+  link?: string;
+}
+
+export function ProjectsSection({ projects }: { projects: Project[] }) {
   return (
     <section id="projects" className="space-y-12">
       <div className="text-center">

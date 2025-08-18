@@ -1,8 +1,31 @@
-import { personalData, contactLinks } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { Github, Linkedin, Mail, FileText, type LucideIcon } from 'lucide-react';
 
-export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
+interface PersonalData {
+  name: string;
+  email: string;
+  github: string;
+  linkedin: string;
+  resumeUrl: string;
+}
+
+interface ContactLink {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+export function SiteFooter({ className, personalData }: React.HTMLAttributes<HTMLElement> & { personalData: PersonalData | null }) {
+  if (!personalData) return null;
+
+  const contactLinks: ContactLink[] = [
+    { label: 'GitHub', href: personalData.github, icon: Github },
+    { label: 'LinkedIn', href: personalData.linkedin, icon: Linkedin },
+    { label: 'Email', href: `mailto:${personalData.email}`, icon: Mail },
+    { label: 'Resume', href: personalData.resumeUrl, icon: FileText },
+  ];
+
   return (
     <footer className={cn('border-t border-primary/20', className)}>
       <div className="container flex flex-col items-center justify-between gap-4 py-10 md:h-24 md:flex-row md:py-0">

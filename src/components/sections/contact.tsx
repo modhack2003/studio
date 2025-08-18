@@ -1,8 +1,30 @@
 import { Button } from '@/components/ui/button';
-import { contactLinks, personalData } from '@/lib/data';
 import Link from 'next/link';
+import { Github, Linkedin, Mail, FileText, type LucideIcon } from 'lucide-react';
 
-export function ContactSection() {
+interface PersonalData {
+  email: string;
+  github: string;
+  linkedin: string;
+  resumeUrl: string;
+}
+
+interface ContactLink {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+export function ContactSection({ personalData }: { personalData: PersonalData | null }) {
+  if (!personalData) return null;
+
+  const contactLinks: ContactLink[] = [
+    { label: 'GitHub', href: personalData.github, icon: Github },
+    { label: 'LinkedIn', href: personalData.linkedin, icon: Linkedin },
+    { label: 'Email', href: `mailto:${personalData.email}`, icon: Mail },
+    { label: 'Resume', href: personalData.resumeUrl, icon: FileText },
+  ];
+
   return (
     <section id="contact" className="space-y-12">
       <div className="text-center">

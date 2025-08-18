@@ -1,16 +1,23 @@
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { skills } from '@/lib/data';
 import { Code, Terminal, BrainCircuit } from 'lucide-react';
 import PixelCard from '../pixel-card';
 
-const skillSections = [
+interface Skills {
+  languages: string[];
+  tools: string[];
+  areas: string[];
+}
+
+export function SkillsSection({ skills }: { skills: Skills | null }) {
+  if (!skills) return null;
+
+  const skillSections = [
     { title: 'Languages', icon: Code, items: skills.languages },
     { title: 'Tools & Technologies', icon: Terminal, items: skills.tools },
     { title: 'Areas of Expertise', icon: BrainCircuit, items: skills.areas },
-]
+  ];
 
-export function SkillsSection() {
   return (
     <section id="skills" className="space-y-12">
         <div className="text-center">
