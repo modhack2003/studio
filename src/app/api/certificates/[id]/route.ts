@@ -23,7 +23,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   try {
     const { id } = params;
     await prisma.certificate.delete({
-      where: { id: id }, // Use the destructured id
+      where: { id: id },
     });
     return new NextResponse(null, { status: 204 });
   } catch (error) {

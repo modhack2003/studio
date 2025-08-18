@@ -1,4 +1,3 @@
-
 import { PrismaClient } from '@prisma/client';
 // import { personalData, projects, certificates, education, skills } from '../src/lib/data';
 
