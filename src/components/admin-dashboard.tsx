@@ -54,6 +54,8 @@ interface Skills {
   areas: string[];
 }
 
+type SaveData = PersonalData | Project | Certificate | Education | Skills;
+
 export function AdminDashboard() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
@@ -72,7 +74,7 @@ export function AdminDashboard() {
     fetch('/api/skills').then(res => res.json()).then(setSkills);
   }, []);
 
-  const handleSave = async (section: string, data: any, id?: string) => {
+  const handleSave = async (section: string, data: SaveData | null, id?: string) => {
     let url = `/api/${section}`;
     let method = 'POST'; // Default to POST
 
@@ -91,7 +93,7 @@ export function AdminDashboard() {
       const result = await response.json();
       toast({ title: `${section} updated successfully!` });
       return result;
-    } catch (error) {
+    } catch (_error) {
       toast({ title: `Error updating ${section}`, variant: 'destructive' });
     }
   };
@@ -105,7 +107,7 @@ export function AdminDashboard() {
       if (section === 'projects') setProjects(projects.filter(p => p.id !== id));
       if (section === 'certificates') setCertificates(certificates.filter(c => c.id !== id));
       if (section === 'education') setEducation(education.filter(e => e.id !== id));
-    } catch (error) {
+    } catch (_error) {
       toast({ title: `Error deleting ${section}`, variant: 'destructive' });
     }
   };
@@ -123,7 +125,7 @@ export function AdminDashboard() {
       const data = await response.json();
       setPersonalData(prev => prev ? { ...prev, resumeUrl: data.resumeUrl } : null);
       toast({ title: 'Resume uploaded successfully!' });
-    } catch (error) {
+    } catch (_error) {
       toast({ title: 'Error uploading resume', variant: 'destructive' });
     }
   };

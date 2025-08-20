@@ -31,7 +31,7 @@ export function ContactSection({ personalData }: { personalData: PersonalData | 
       <div className="text-center">
         <AnimatedTitle title="Get In Touch" />
         <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-          Have a question or a project in mind? Let's connect.
+          Have a question or a project in mind? Let&apos;s connect.
         </p>
       </div>
       <div className="mx-auto max-w-sm space-y-4 text-center">

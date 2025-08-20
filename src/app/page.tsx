@@ -1,5 +1,5 @@
 import { MainNav } from "@/components/main-nav";
-import { SiteFooter } from "@/components/site-footer";
+
 import { HeroSection } from "@/components/sections/hero";
 import { AboutSection } from "@/components/sections/about";
 import { ProjectsSection } from "@/components/sections/projects";

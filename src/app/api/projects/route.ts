@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const projects = await prisma.project.findMany();
     return NextResponse.json(projects);
-  } catch (error) {
+  } catch (_error) {
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       data: json,
     });
     return NextResponse.json(newProject);
-  } catch (error) {
+  } catch (_error) {
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

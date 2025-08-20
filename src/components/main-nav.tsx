@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, Terminal, X } from 'lucide-react';
+import { Menu, Terminal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -42,7 +42,7 @@ export function MainNav() {
       <div className="container flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
           <Terminal className="h-6 w-6 text-primary glitch" data-text="B>" />
-          <span className="font-bold text-glow">Bikram's Cyber Fortress</span>
+          <span className="font-bold text-glow">Bikram&apos;s Cyber Fortress</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -71,7 +71,7 @@ export function MainNav() {
               <SheetHeader>
                 <Link href="/" className="flex items-center space-x-2 mb-8" onClick={() => setIsMobileMenuOpen(false)}>
                   <Terminal className="h-6 w-6 text-primary" />
-                  <span className="font-bold">Bikram's Fortress</span>
+                  <span className="font-bold">Bikram&apos;s Fortress</span>
                 </Link>
               </SheetHeader>
               <nav className="flex flex-col space-y-4">

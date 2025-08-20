@@ -7,14 +7,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   try {
     const { id } = params;
     const json = await request.json();
-    const { id: omittedId, ...dataToUpdate } = json; // Omit 'id' from the data
+    const { id: _omittedId, ...dataToUpdate } = json; // Omit 'id' from the data
 
     const updatedCertificate = await prisma.certificate.update({
       where: { id: id },
       data: dataToUpdate,
     });
     return NextResponse.json(updatedCertificate);
-  } catch (error) {
+  } catch (_error) {
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
@@ -26,7 +26,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       where: { id: id },
     });
     return new NextResponse(null, { status: 204 });
-  } catch (error) {
+  } catch (_error) {
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

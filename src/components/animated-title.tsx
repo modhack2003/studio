@@ -24,7 +24,6 @@ const bracketVariants = {
     opacity: 1,
     transition: {
       duration: 1,
-      ease: "easeInOut",
     },
   },
 };
@@ -36,7 +35,6 @@ const textVariants = {
     y: 0,
     transition: {
       duration: 0.5,
-      ease: "easeOut",
     },
   },
 };

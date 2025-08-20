@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const certificates = await prisma.certificate.findMany();
     return NextResponse.json(certificates);
-  } catch (error) {
+  } catch (_error) {
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       data: json,
     });
     return NextResponse.json(newCertificate);
-  } catch (error) {
+  } catch (_error) {
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

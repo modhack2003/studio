@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const personalData = await prisma.personalData.findFirst();
     return NextResponse.json(personalData);
-  } catch (error) {
+  } catch (_error) {
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
@@ -18,7 +18,7 @@ export async function PUT(request: Request) {
     const json = await request.json();
     const existingPersonalData = await prisma.personalData.findFirst();
 
-    const { id, ...dataToUpdate } = json; // Destructure to omit 'id'
+    const { id: _id, ...dataToUpdate } = json; // Destructure to omit 'id'
 
     let updatedPersonalData;
     if (existingPersonalData) {
@@ -33,7 +33,7 @@ export async function PUT(request: Request) {
     }
 
     return NextResponse.json(updatedPersonalData);
-  } catch (error) {
+  } catch (_error) {
     console.error("Error updating personal data:", error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }

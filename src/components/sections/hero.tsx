@@ -1,4 +1,4 @@
-import { AnimatedTitle } from '@/components/animated-title';
+
 import { DecryptedText } from '@/components/decrypted-text';
 
 interface PersonalData {

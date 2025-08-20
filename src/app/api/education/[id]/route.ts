@@ -13,7 +13,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
       return new NextResponse('Education not found', { status: 404 });
     }
     return NextResponse.json(education);
-  } catch (error) {
+  } catch (_error) {
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
@@ -22,14 +22,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   try {
     const { id } = params;
     const json = await request.json();
-    const { id: omittedId, ...dataToUpdate } = json;
+    const { id: _omittedId, ...dataToUpdate } = json;
 
     const updatedEducation = await prisma.education.update({
       where: { id: id },
       data: dataToUpdate,
     });
     return NextResponse.json(updatedEducation);
-  } catch (error) {
+  } catch (_error) {
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
@@ -41,7 +41,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       where: { id: id },
     });
     return new NextResponse(null, { status: 204 });
-  } catch (error) {
+  } catch (_error) {
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

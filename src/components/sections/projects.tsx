@@ -19,7 +19,7 @@ export function ProjectsSection({ projects }: { projects: Project[] }) {
       <div className="text-center">
         <AnimatedTitle title="My Projects" />
         <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-          A selection of my work. See what I've been building.
+          A selection of my work. See what I&apos;ve been building.
         </p>
       </div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-2 gap-6">
