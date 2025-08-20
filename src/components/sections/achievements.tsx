@@ -2,6 +2,7 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Trophy } from 'lucide-react';
 import PixelCard from '../pixel-card';
+import { AnimatedTitle } from '@/components/animated-title';
 
 interface AchievementsSectionProps {
     achievementsData: {achievements: string} | null;
@@ -11,9 +12,7 @@ export function AchievementsSection({ achievementsData }: AchievementsSectionPro
   return (
     <section id="achievements" className="space-y-12">
         <div className="text-center">
-            <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl text-glow">
-            [ GitHub Achievements ]
-            </h2>
+            <AnimatedTitle title="GitHub Achievements" />
             <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
             Trophies and milestones from my coding journey on GitHub.
             </p>

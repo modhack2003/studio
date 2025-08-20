@@ -208,6 +208,10 @@ export function AdminDashboard() {
                         <Label htmlFor="linkedin">LinkedIn URL</Label>
                         <Input id="linkedin" value={personalData.linkedin} onChange={(e) => setPersonalData({ ...personalData, linkedin: e.target.value })} />
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input id="email" value={personalData.email} onChange={(e) => setPersonalData({ ...personalData, email: e.target.value })} />
+                      </div>
                     </CardContent>
                   )}
                   <Button className="m-6 mt-0" onClick={() => handleSave('personal-data', personalData, personalData?.id)}>Save Changes</Button>

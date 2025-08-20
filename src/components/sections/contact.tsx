@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Github, Linkedin, Mail, FileText, type LucideIcon } from 'lucide-react';
+import { AnimatedTitle } from '@/components/animated-title';
 
 interface PersonalData {
   email: string;
@@ -28,9 +29,7 @@ export function ContactSection({ personalData }: { personalData: PersonalData | 
   return (
     <section id="contact" className="space-y-12">
       <div className="text-center">
-        <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl text-glow">
-          [ Get In Touch ]
-        </h2>
+        <AnimatedTitle title="Get In Touch" />
         <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
           Have a question or a project in mind? Let's connect.
         </p>

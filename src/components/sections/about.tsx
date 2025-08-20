@@ -2,6 +2,7 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GraduationCap, ShieldCheck, Github, Linkedin } from 'lucide-react';
 import TiltedCard from '@/components/profile-card';
 import PixelCard from '../pixel-card';
+import { AnimatedTitle } from '@/components/animated-title';
 
 interface PersonalData {
   name: string;
@@ -42,9 +43,7 @@ export function AboutSection({ personalData, education, certificates }: { person
   return (
     <section id="about" className="space-y-12">
       <div className="text-center">
-        <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl text-glow">
-          [ About Me ]
-        </h2>
+        <AnimatedTitle title="About Me" />
         <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
           A little bit about my journey in the digital trenches.
         </p>

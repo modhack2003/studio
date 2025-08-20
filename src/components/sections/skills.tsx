@@ -2,6 +2,7 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Code, Terminal, BrainCircuit } from 'lucide-react';
 import PixelCard from '../pixel-card';
+import { AnimatedTitle } from '@/components/animated-title';
 
 interface Skills {
   languages: string[];
@@ -21,9 +22,7 @@ export function SkillsSection({ skills }: { skills: Skills | null }) {
   return (
     <section id="skills" className="space-y-12">
         <div className="text-center">
-            <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl text-glow">
-            [ My Arsenal ]
-            </h2>
+            <AnimatedTitle title="My Arsenal" />
             <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
             The languages, tools, and technologies I use to build and secure applications.
             </p>

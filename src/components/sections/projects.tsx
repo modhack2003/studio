@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import PixelCard from '../pixel-card';
+import { AnimatedTitle } from '@/components/animated-title';
 
 interface Project {
   title: string;
@@ -16,9 +17,7 @@ export function ProjectsSection({ projects }: { projects: Project[] }) {
   return (
     <section id="projects" className="space-y-12">
       <div className="text-center">
-        <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl text-glow">
-          [ My Projects ]
-        </h2>
+        <AnimatedTitle title="My Projects" />
         <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
           A selection of my work. See what I've been building.
         </p>
