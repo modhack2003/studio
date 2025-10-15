@@ -3,7 +3,12 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const { pin } = await request.json();
-    const correct = process.env.ADMIN_PIN || '1234';
+    const correct = process.env.ADMIN_PIN;
+    
+    if (!correct) {
+      return new NextResponse('Admin PIN not configured', { status: 500 });
+    }
+    
     if (pin !== correct) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
