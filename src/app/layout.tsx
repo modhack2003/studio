@@ -8,8 +8,35 @@ import { SiteFooter } from "@/components/site-footer";
 const prisma = new PrismaClient();
 
 export const metadata: Metadata = {
-  title: "Bikram's Cyber Fortress",
-  description: "Portfolio of Bikram Dey, a cybersecurity student.",
+  title: "Bikram's Cyber Fortress | Cybersecurity Analyst & Penetration Tester",
+  description: "Professional portfolio of Bikram Dey, a cybersecurity analyst and penetration tester specializing in network security, vulnerability assessment, and security architecture.",
+  keywords: ["cybersecurity", "penetration testing", "security analyst", "vulnerability assessment", "network security", "ethical hacking"],
+  authors: [{ name: "Bikram Dey" }],
+  creator: "Bikram Dey",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://bikram-portfolio.vercel.app",
+    title: "Bikram's Cyber Fortress | Cybersecurity Professional",
+    description: "Professional portfolio of Bikram Dey, a cybersecurity analyst and penetration tester.",
+    siteName: "Bikram's Cyber Fortress",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Bikram's Cyber Fortress | Cybersecurity Professional",
+    description: "Professional portfolio of Bikram Dey, a cybersecurity analyst and penetration tester.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export default async function RootLayout({
@@ -17,7 +44,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const personalData = await prisma.personalData.findFirst();
+  let personalData = null;
+  
+  try {
+    personalData = await prisma.personalData.findFirst();
+  } catch (error) {
+    console.error('Database connection failed in layout:', error);
+  }
+  
   const plainPersonalData = JSON.parse(JSON.stringify(personalData));
 
   return (

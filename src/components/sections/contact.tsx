@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Github, Linkedin, Mail, FileText, type LucideIcon } from 'lucide-react';
 import { AnimatedTitle } from '@/components/animated-title';
+import { ContactForm } from '@/components/contact-form';
 
 interface PersonalData {
   email: string;
@@ -34,22 +35,34 @@ export function ContactSection({ personalData }: { personalData: PersonalData | 
           Have a question or a project in mind? Let&apos;s connect.
         </p>
       </div>
-      <div className="mx-auto max-w-sm space-y-4 text-center">
-        <Button asChild size="lg" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 hover:text-glow">
-          <a href={`mailto:${personalData.email}`}>Send me an Email</a>
-        </Button>
-        <p className="text-xs text-muted-foreground">
-          You can also find me on these platforms:
-        </p>
-        <div className="flex items-center justify-center space-x-4">
-          {contactLinks.map((link) => (
-            <Button asChild key={link.label} variant="outline" size="icon" className="border-primary/50 text-primary hover:bg-primary/10 hover:border-primary">
-              <Link href={link.href} target="_blank" rel="noopener noreferrer">
-                <link.icon className="h-5 w-5" />
-                <span className="sr-only">{link.label}</span>
-              </Link>
+      
+      <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+        {/* Contact Form */}
+        <div>
+          <ContactForm />
+        </div>
+        
+        {/* Contact Links */}
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <Button asChild size="lg" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 hover:text-glow">
+              <a href={`mailto:${personalData.email}`}>Send me an Email</a>
             </Button>
-          ))}
+            <p className="text-sm text-muted-foreground text-center">
+              Or connect with me on these platforms:
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            {contactLinks.map((link) => (
+              <Button asChild key={link.label} variant="outline" className="border-primary/50 text-primary hover:bg-primary/10 hover:border-primary h-16 flex-col space-y-2">
+                <Link href={link.href} target="_blank" rel="noopener noreferrer">
+                  <link.icon className="h-5 w-5" />
+                  <span className="text-sm font-medium">{link.label}</span>
+                </Link>
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
     </section>

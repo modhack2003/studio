@@ -53,7 +53,6 @@ export function AboutSection({ personalData, education, certificates }: { person
           <TiltedCard 
             imageSrc="https://github.com/modhack2003.png"
             altText={personalData?.name || ''}
-            captionText={personalData?.title || ''}
             containerHeight="400px"
             imageWidth="400px"
             imageHeight="400px"

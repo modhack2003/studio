@@ -15,9 +15,11 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { name: 'About', href: '#about' },
   { name: 'Projects', href: '#projects' },
+  { name: 'CTF', href: '#ctf' },
   { name: 'Skills', href: '#skills' },
+  { name: 'Blog', href: '#blog' },
   { name: 'Contact', href: '#contact' },
-  { name: 'Admin', href: '/admin' },
+  { name: 'Admin', href: '/b1kr4m-5h4d0w' },
 ];
 
 export function MainNav() {

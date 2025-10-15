@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { AdminDashboard } from '@/components/admin-dashboard';
-import { DeadEndPinForm } from '@/components/dead-end-pin-form';
+import { PinForm } from '@/components/pin-form';
 import Link from 'next/link';
 import { Terminal } from 'lucide-react';
 
-export default function AdminPage() {
+export default function BikramPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const handleLoginSuccess = () => {
@@ -26,7 +26,7 @@ export default function AdminPage() {
         {isAuthenticated ? (
           <AdminDashboard />
         ) : (
-          <DeadEndPinForm onSuccess={handleLoginSuccess} />
+          <PinForm onSuccess={handleLoginSuccess} />
         )}
       </div>
     </div>

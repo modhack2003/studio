@@ -34,7 +34,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(updatedSkills);
   } catch (_error) {
-    console.error("Error updating skills data:", error);
+    console.error("Error updating skills data:", _error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

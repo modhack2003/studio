@@ -46,3 +46,50 @@ model Education {
   degree      String
   duration    String
 }
+
+model CtfEvent {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  organizer  String
+  date       DateTime
+  placement  String?
+  team       String?
+  writeupUrl String?
+  categories String[]
+  points     Int?
+}
+
+model GitHubRepository {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  githubId        Int      @unique // GitHub repository ID
+  name            String
+  fullName        String   @unique // owner/repo format
+  description     String?
+  htmlUrl         String
+  cloneUrl        String
+  language        String?
+  topics          String[] // GitHub topics/tags
+  stargazersCount Int      @default(0)
+  forksCount      Int      @default(0)
+  createdAt       DateTime
+  updatedAt       DateTime
+  pushedAt        DateTime
+  size            Int
+  defaultBranch   String
+  visibility      String   // public, private
+  archived        Boolean  @default(false)
+  disabled        Boolean  @default(false)
+  homepage        String?
+  license         String?
+  
+  // Portfolio display settings
+  displayInPortfolio Boolean @default(false)
+  customTitle        String? // Override repository name for display
+  customDescription  String? // Override repository description for display
+  customTags         String[] // Custom tags for portfolio display
+  displayOrder       Int? // Order in portfolio (lower = first)
+  
+  // Metadata
+  syncedAt DateTime @default(now())
+  lastChecked DateTime @default(now())
+}

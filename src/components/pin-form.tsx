@@ -16,30 +16,30 @@ export function PinForm({ onSuccess }: PinFormProps) {
   const [pin, setPin] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const correctPin = '1234';
+  const _correctPin = undefined as unknown as string; // no client-side pin
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      if (pin === correctPin) {
-        toast({
-          title: 'Access Granted',
-          description: 'Welcome, Admin.',
-          variant: 'default',
-        });
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin }),
+      });
+      if (response.ok) {
+        toast({ title: 'Access Granted', description: 'Welcome, Admin.' });
         onSuccess();
       } else {
-        toast({
-          title: 'Access Denied',
-          description: 'Incorrect PIN provided.',
-          variant: 'destructive',
-        });
+        toast({ title: 'Access Denied', description: 'Incorrect PIN.', variant: 'destructive' });
         setPin('');
       }
+    } catch {
+      toast({ title: 'Error', description: 'Could not authenticate.', variant: 'destructive' });
+    } finally {
       setIsSubmitting(false);
-    }, 500);
+    }
   };
 
   return (

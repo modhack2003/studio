@@ -3,54 +3,116 @@ import { MainNav } from "@/components/main-nav";
 import { HeroSection } from "@/components/sections/hero";
 import { AboutSection } from "@/components/sections/about";
 import { ProjectsSection } from "@/components/sections/projects";
-import { AchievementsSection } from "@/components/sections/achievements";
 import { SkillsSection } from "@/components/sections/skills";
+import { BlogSection } from "@/components/sections/blog";
 import { ContactSection } from "@/components/sections/contact";
+import { CtfSection } from "@/components/sections/ctf";
 import { Separator } from "@/components/ui/separator";
 import { PrismaClient } from '@prisma/client';
-import { summarizeUrlFlow } from "@/ai/flows/summarize-url-flow";
+// Removed sample-data fallback per request; database only
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  log: ['error'], // Only log errors to reduce overhead
+});
 
-async function getGithubAchievements(): Promise<{ achievements: string } | null> {
+async function getPortfolioData() {
   try {
-    const summary = await summarizeUrlFlow({ url: 'https://github.com/modhack2003' });
-    return { achievements: summary };
+    // Optimize queries with select only needed fields and limit results
+    const [dbPersonalData, dbProjects, dbGithubRepos, dbSkills, dbCertificates, dbEducation, dbCtf] = await Promise.all([
+      prisma.personalData.findFirst({
+        select: { id: true, name: true, title: true, bio: true, github: true, linkedin: true, email: true, resumeUrl: true }
+      }),
+      prisma.project.findMany({
+        select: { id: true, title: true, description: true, tags: true, link: true },
+        take: 6 // Limit to 6 projects for faster loading
+      }),
+      prisma.gitHubRepository.findMany({
+        where: { displayInPortfolio: true },
+        select: { 
+          id: true, 
+          name: true, 
+          fullName: true, 
+          description: true, 
+          htmlUrl: true, 
+          language: true, 
+          topics: true, 
+          stargazersCount: true, 
+          forksCount: true, 
+          homepage: true,
+          customTitle: true,
+          customDescription: true,
+          customTags: true,
+          displayOrder: true
+        },
+        orderBy: [
+          { displayOrder: 'asc' },
+          { updatedAt: 'desc' }
+        ],
+        take: 6 // Limit to 6 GitHub repos for faster loading
+      }),
+      prisma.skill.findFirst({
+        select: { id: true, languages: true, tools: true, areas: true }
+      }),
+      prisma.certificate.findMany({
+        select: { id: true, name: true, issuer: true, year: true },
+        take: 8 // Limit certificates
+      }),
+      prisma.education.findMany({
+        select: { id: true, institution: true, degree: true, duration: true },
+        take: 5 // Limit education entries
+      }),
+      prisma.ctfEvent.findMany({ 
+        select: { id: true, name: true, organizer: true, date: true, categories: true },
+        orderBy: { date: 'desc' },
+        take: 10 // Limit CTF events
+      })
+    ]);
+
+    return {
+      personalData: JSON.parse(JSON.stringify(dbPersonalData)),
+      projects: JSON.parse(JSON.stringify(dbProjects)),
+      githubRepos: JSON.parse(JSON.stringify(dbGithubRepos)),
+      skills: JSON.parse(JSON.stringify(dbSkills)),
+      certificates: JSON.parse(JSON.stringify(dbCertificates)),
+      education: JSON.parse(JSON.stringify(dbEducation)),
+      ctfEvents: JSON.parse(JSON.stringify(dbCtf)),
+    };
   } catch (error) {
-    console.error("Failed to fetch GitHub achievements:", error);
-    return { achievements: "Could not fetch achievements. The AI model may be unavailable or the GitHub page could not be accessed." };
+    console.error('Error fetching portfolio data:', error);
+    return {
+      personalData: null,
+      projects: [],
+      githubRepos: [],
+      skills: null,
+      certificates: [],
+      education: [],
+      ctfEvents: [],
+    };
   }
 }
 
 export default async function Home() {
-  const achievementsData = await getGithubAchievements();
-  const personalData = await prisma.personalData.findFirst();
-  const projects = await prisma.project.findMany();
-  const skills = await prisma.skill.findFirst();
-  const certificates = await prisma.certificate.findMany();
-  const education = await prisma.education.findMany();
-
-  const plainPersonalData = JSON.parse(JSON.stringify(personalData));
-  const plainProjects = JSON.parse(JSON.stringify(projects));
-  const plainSkills = JSON.parse(JSON.stringify(skills));
-  const plainCertificates = JSON.parse(JSON.stringify(certificates));
-  const plainEducation = JSON.parse(JSON.stringify(education));
+  // Load only essential data for fast page load - remove AI dependency completely
+  const portfolioData = await getPortfolioData();
+  const { personalData, projects, githubRepos, skills, certificates, education, ctfEvents } = portfolioData;
 
   return (
     <div className="flex min-h-screen flex-col">
       <MainNav />
       <main className="flex-1">
-        <HeroSection personalData={plainPersonalData} />
+        <HeroSection personalData={personalData} />
         <div className="container mx-auto px-4 py-16 sm:py-24 space-y-24">
-          <AboutSection personalData={plainPersonalData} certificates={plainCertificates} education={plainEducation} />
+          <AboutSection personalData={personalData} certificates={certificates} education={education} />
           <Separator className="my-8 bg-primary/20" />
-          <AchievementsSection achievementsData={achievementsData} />
+          <ProjectsSection projects={projects} githubRepos={githubRepos} />
           <Separator className="my-8 bg-primary/20" />
-          <ProjectsSection projects={plainProjects} />
+          <CtfSection events={ctfEvents || []} />
           <Separator className="my-8 bg-primary/20" />
-          <SkillsSection skills={plainSkills} />
+          <SkillsSection skills={skills} />
           <Separator className="my-8 bg-primary/20" />
-          <ContactSection personalData={plainPersonalData} />
+          <BlogSection />
+          <Separator className="my-8 bg-primary/20" />
+          <ContactSection personalData={personalData} />
         </div>
       </main>
     </div>
