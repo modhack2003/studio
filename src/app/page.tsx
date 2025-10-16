@@ -8,12 +8,8 @@ import { BlogSection } from "@/components/sections/blog";
 import { ContactSection } from "@/components/sections/contact";
 import { CtfSection } from "@/components/sections/ctf";
 import { Separator } from "@/components/ui/separator";
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 // Removed sample-data fallback per request; database only
-
-const prisma = new PrismaClient({
-  log: ['error'], // Only log errors to reduce overhead
-});
 
 async function getPortfolioData() {
   try {
@@ -90,8 +86,7 @@ async function getPortfolioData() {
       ctfEvents: [],
     };
   } finally {
-    // Ensure Prisma connection is properly closed
-    await prisma.$disconnect();
+    // Prisma client is managed globally, no need to disconnect
   }
 }
 
