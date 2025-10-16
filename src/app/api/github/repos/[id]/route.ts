@@ -6,11 +6,12 @@ const prisma = new PrismaClient();
 // GET - Fetch single repository
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const repository = await prisma.gitHubRepository.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!repository) {
@@ -34,9 +35,10 @@ export async function GET(
 // PUT - Update repository settings (for admin dashboard)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const {
       displayInPortfolio,
@@ -70,7 +72,7 @@ export async function PUT(
     if (displayOrder !== undefined) updateData.displayOrder = displayOrder;
 
     const updatedRepository = await prisma.gitHubRepository.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData
     });
 
@@ -99,11 +101,12 @@ export async function PUT(
 // DELETE - Remove repository from database
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await prisma.gitHubRepository.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     return NextResponse.json({

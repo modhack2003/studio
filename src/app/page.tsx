@@ -79,6 +79,7 @@ async function getPortfolioData() {
     };
   } catch (error) {
     console.error('Error fetching portfolio data:', error);
+    // Return empty data structure to prevent crashes
     return {
       personalData: null,
       projects: [],
@@ -88,6 +89,9 @@ async function getPortfolioData() {
       education: [],
       ctfEvents: [],
     };
+  } finally {
+    // Ensure Prisma connection is properly closed
+    await prisma.$disconnect();
   }
 }
 
