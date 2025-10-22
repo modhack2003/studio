@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL || "mongodb://localhost:27017/bikram-portfolio"
+      url: process.env.DATABASE_URL 
     }
   }
 });
@@ -28,7 +28,7 @@ async function main() {
       bio: 'Cybersecurity professional focusing on offensive security, vulnerability assessment, and secure architecture.',
       github: 'https://github.com/modhack2003',
       linkedin: 'https://linkedin.com/in/bikramdey',
-      email: 'bikram.dey@example.com',
+      email: 'bikram20031213dey@gmail.com',
       resumeUrl: '/resume/bikram-dey-resume.pdf',
     },
   });
