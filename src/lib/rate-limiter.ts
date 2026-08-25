@@ -9,6 +9,8 @@ const rateLimitStore = new Map<string, RateLimitEntry>();
 export class RateLimiter {
   private windowMs: number;
   private maxRequests: number;
+  private lastCleanup: number = Date.now();
+  private cleanupIntervalMs: number = 5 * 60 * 1000; // 5 minutes
 
   constructor(windowMs: number = 60000, maxRequests: number = 60) {
     this.windowMs = windowMs; // 1 minute
@@ -16,7 +18,13 @@ export class RateLimiter {
   }
 
   isAllowed(key: string): boolean {
+    // Lazy cleanup — only run every 5 minutes
     const now = Date.now();
+    if (now - this.lastCleanup > this.cleanupIntervalMs) {
+      this.cleanup();
+      this.lastCleanup = now;
+    }
+
     const entry = rateLimitStore.get(key);
 
     if (!entry || now > entry.resetTime) {
@@ -52,7 +60,7 @@ export class RateLimiter {
     return entry.resetTime;
   }
 
-  // Clean up expired entries periodically
+  // Clean up expired entries
   cleanup(): void {
     const now = Date.now();
     for (const [key, entry] of rateLimitStore.entries()) {
@@ -66,7 +74,3 @@ export class RateLimiter {
 // Global rate limiter instance
 export const githubRateLimiter = new RateLimiter(60000, 60); // 60 requests per minute
 
-// Clean up expired entries every 5 minutes
-setInterval(() => {
-  githubRateLimiter.cleanup();
-}, 5 * 60 * 1000);

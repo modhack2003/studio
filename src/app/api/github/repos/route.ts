@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { githubAPI } from '@/lib/github';
 import { githubRateLimiter } from '@/lib/rate-limiter';
+import { requireAdminSession } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const username = searchParams.get('username');
-    const token = searchParams.get('token'); // Optional GitHub token for higher rate limits
+    // Token is read from env only (not from query params to avoid log leaks)
 
     if (!username) {
       return NextResponse.json(
@@ -94,6 +95,9 @@ export async function GET(request: NextRequest) {
 
 // POST endpoint to sync repositories (for admin use)
 export async function POST(request: NextRequest) {
+  const authError = requireAdminSession(request);
+  if (authError) return authError;
+
   try {
     // Check rate limit
     const clientIP = request.ip || 'unknown';

@@ -1,8 +1,7 @@
 
-import { PrismaClient } from '@prisma/client';
-import { NextResponse } from 'next/server';
-
-const prisma = new PrismaClient();
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { requireAdminSession } from '@/lib/auth';
 
 export async function GET() {
   try {
@@ -13,11 +12,24 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const authError = requireAdminSession(request);
+  if (authError) return authError;
+
   try {
     const json = await request.json();
+
+    // Input validation
+    const institution = typeof json.institution === 'string' ? json.institution.trim() : '';
+    const degree = typeof json.degree === 'string' ? json.degree.trim() : '';
+    const duration = typeof json.duration === 'string' ? json.duration.trim() : '';
+
+    if (!institution) {
+      return NextResponse.json({ error: 'Institution is required' }, { status: 400 });
+    }
+
     const newEducation = await prisma.education.create({
-      data: json,
+      data: { institution, degree, duration },
     });
     return NextResponse.json(newEducation);
   } catch (_error) {

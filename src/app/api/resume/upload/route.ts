@@ -1,32 +1,40 @@
 
-import { PrismaClient } from '@prisma/client';
-import { NextResponse } from 'next/server';
-import { put } from '@vercel/blob'; // New import for Vercel Blob
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { requireAdminSession } from '@/lib/auth';
+import { put } from '@vercel/blob';
 
-const prisma = new PrismaClient();
+export async function POST(request: NextRequest) {
+  const authError = requireAdminSession(request);
+  if (authError) return authError;
 
-export const config = {
-  runtime: 'edge', // Recommended for Vercel Blob for better performance
-};
-
-export async function POST(request: Request) {
   try {
     const data = await request.formData();
     const file = data.get('file') as File;
 
     if (!file) {
-      return new NextResponse('No file uploaded', { status: 400 });
+      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+    }
+
+    // Validate file type — only allow PDFs
+    if (file.type !== 'application/pdf') {
+      return NextResponse.json({ error: 'Only PDF files are allowed' }, { status: 400 });
+    }
+
+    // Validate file size — max 10MB
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 400 });
     }
 
     // Generate a unique file name to prevent collisions
-    const filename = `${Date.now()}-${file.name}`;
+    const filename = `resume-${Date.now()}.pdf`;
 
     // Upload file to Vercel Blob
     const blob = await put(filename, file, {
-      access: 'public', // Make the file publicly accessible
+      access: 'public',
     });
 
-    const resumeUrl = blob.url; // Vercel Blob returns the public URL
+    const resumeUrl = blob.url;
 
     await prisma.personalData.updateMany({
       data: {

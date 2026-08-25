@@ -29,23 +29,53 @@ function rot13(text: string): string {
   });
 }
 
+/**
+ * Check if the request has a structurally valid, unexpired admin session token.
+ * Full cryptographic verification also runs on every API route handler.
+ */
+function hasValidSession(request: NextRequest): boolean {
+  const token = request.cookies.get('admin_session')?.value;
+  if (!token || typeof token !== 'string') return false;
+
+  const parts = token.split(':');
+  if (parts.length !== 3) return false;
+
+  const [, timestamp, hmac] = parts;
+  if (!hmac || hmac.length !== 64) return false;
+
+  const tokenAge = Date.now() - parseInt(timestamp, 10);
+  return !(isNaN(tokenAge) || tokenAge > 6 * 60 * 60 * 1000 || tokenAge < 0);
+}
+
+/**
+ * Add security headers to the response.
+ */
+function addSecurityHeaders(response: NextResponse): NextResponse {
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  return response;
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const session = request.cookies.get('admin_session')?.value;
+  const isAuthenticated = hasValidSession(request);
 
   // Allow public access portal (obfuscated)
   if (pathname === '/b1kr4m-5h4d0w') {
-    return NextResponse.next();
+    return addSecurityHeaders(NextResponse.next());
   }
 
   // Allow direct access to bikram route (admin dashboard) - REAL ACCESS
   if (pathname === '/bikram') {
-    return NextResponse.next();
+    return addSecurityHeaders(NextResponse.next());
   }
 
   // Allow access to admin route - DEAD END (always fails PIN)
   if (pathname === '/admin') {
-    return NextResponse.next();
+    return addSecurityHeaders(NextResponse.next());
   }
 
   // Obfuscated paths support: decode last path segment via base64, hex, or rot13
@@ -59,26 +89,26 @@ export function middleware(request: NextRequest) {
 
     if (decoded === 'admin' || decoded === '/admin') {
       // Require session for direct admin, otherwise show portal
-      if (session) return NextResponse.rewrite(new URL('/admin', request.url));
-      return NextResponse.rewrite(new URL('/b1kr4m-5h4d0w', request.url));
+      if (isAuthenticated) return addSecurityHeaders(NextResponse.rewrite(new URL('/admin', request.url)));
+      return addSecurityHeaders(NextResponse.rewrite(new URL('/b1kr4m-5h4d0w', request.url)));
     }
     if (decoded === 'admin/access' || decoded === '/admin/access') {
-      return NextResponse.rewrite(new URL('/b1kr4m-5h4d0w', request.url));
+      return addSecurityHeaders(NextResponse.rewrite(new URL('/b1kr4m-5h4d0w', request.url)));
     }
     if (decoded === 'bikram' || decoded === '/bikram') {
       // Obfuscated bikram access
-      if (session) return NextResponse.rewrite(new URL('/bikram', request.url));
-      return NextResponse.rewrite(new URL('/b1kr4m-5h4d0w', request.url));
+      if (isAuthenticated) return addSecurityHeaders(NextResponse.rewrite(new URL('/bikram', request.url)));
+      return addSecurityHeaders(NextResponse.rewrite(new URL('/b1kr4m-5h4d0w', request.url)));
     }
   }
 
   // Additional obfuscated bikram paths (more secure)
   if (pathname === '/Ym1rcmFt' || pathname === '/62696b72616d' || pathname === '/ovxenz' || pathname === '/b1kr4m') {
-    if (session) return NextResponse.rewrite(new URL('/bikram', request.url));
-    return NextResponse.rewrite(new URL('/b1kr4m-5h4d0w', request.url));
+    if (isAuthenticated) return addSecurityHeaders(NextResponse.rewrite(new URL('/bikram', request.url)));
+    return addSecurityHeaders(NextResponse.rewrite(new URL('/b1kr4m-5h4d0w', request.url)));
   }
 
-  return NextResponse.next();
+  return addSecurityHeaders(NextResponse.next());
 }
 
 export const config = {
@@ -93,5 +123,3 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };
-
-

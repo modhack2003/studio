@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { githubAPI } from '@/lib/github';
 import { githubRateLimiter } from '@/lib/rate-limiter';
-
-const prisma = new PrismaClient();
+import { requireAdminSession } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
+  const authError = requireAdminSession(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { username, token } = body;

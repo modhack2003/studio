@@ -17,81 +17,109 @@ export function CryptoPuzzle({ onSuccess }: CryptoPuzzleProps) {
   const [userInput, setUserInput] = useState('');
   const [showHint, setShowHint] = useState(false);
   const [attempts, setAttempts] = useState(0);
+  const [isChecking, setIsChecking] = useState(false);
   const { toast } = useToast();
 
+  // Puzzle metadata only — solutions stay server-side
   const puzzles = [
     {
       title: "Level 1: ROT13 Cipher",
       description: "Decode this ROT13 encrypted message:",
       cipher: "nqzva",
       hint: "ROT13 shifts each letter by 13 positions in the alphabet",
-      solution: "admin"
     },
     {
       title: "Level 2: Base64 Decode",
       description: "Decode this Base64 string:",
       cipher: "YWRtaW4=",
       hint: "Base64 is a binary-to-text encoding scheme",
-      solution: "admin"
     },
     {
       title: "Level 3: Hex Decode",
       description: "Decode this hexadecimal string:",
       cipher: "61646d696e",
       hint: "Each pair of hex digits represents one ASCII character",
-      solution: "admin"
     },
     {
       title: "Level 4: Caesar Cipher",
       description: "Decode this Caesar cipher (shift by 3):",
       cipher: "dplq",
       hint: "Each letter is shifted 3 positions forward in the alphabet",
-      solution: "admin"
     },
     {
       title: "Level 5: Binary Decode",
       description: "Decode this binary string:",
       cipher: "01100001 01100100 01101101 01101001 01101110",
       hint: "Each 8-bit binary number represents one ASCII character",
-      solution: "admin"
     }
   ];
 
   const currentPuzzle = puzzles[currentLevel - 1];
 
-  const checkAnswer = () => {
-    setAttempts(attempts + 1);
+  const checkAnswer = async () => {
+    if (isChecking || !userInput.trim()) return;
     
-    if (userInput.toLowerCase().trim() === currentPuzzle.solution) {
-      if (currentLevel < puzzles.length) {
-        setCurrentLevel(currentLevel + 1);
-        setUserInput('');
-        setAttempts(0);
+    setIsChecking(true);
+    setAttempts(attempts + 1);
+
+    try {
+      const response = await fetch('/api/ctf/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ level: currentLevel, answer: userInput }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
         toast({
-          title: "Correct!",
-          description: `Level ${currentLevel} completed. Moving to level ${currentLevel + 1}...`,
+          title: "Error",
+          description: result.error || "Something went wrong",
+          variant: "destructive",
         });
+        return;
+      }
+
+      if (result.correct) {
+        if (result.isLastLevel) {
+          toast({
+            title: "🎉 Puzzle Complete!",
+            description: "All levels solved! Access granted.",
+          });
+          onSuccess();
+        } else {
+          setCurrentLevel(currentLevel + 1);
+          setUserInput('');
+          setAttempts(0);
+          setShowHint(false);
+          toast({
+            title: "Correct!",
+            description: `Level ${currentLevel} completed. Moving to level ${currentLevel + 1}...`,
+          });
+        }
       } else {
         toast({
-          title: "🎉 Puzzle Complete!",
-          description: "All levels solved! Access granted.",
+          title: "Incorrect",
+          description: `Wrong answer. Attempts: ${attempts + 1}`,
+          variant: "destructive",
         });
-        onSuccess();
+        
+        if (attempts >= 2) {
+          setShowHint(true);
+        }
       }
-    } else {
+    } catch {
       toast({
-        title: "Incorrect",
-        description: `Wrong answer. Attempts: ${attempts + 1}`,
+        title: "Error",
+        description: "Could not verify answer. Please try again.",
         variant: "destructive",
       });
-      
-      if (attempts >= 2) {
-        setShowHint(true);
-      }
+    } finally {
+      setIsChecking(false);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       checkAnswer();
     }
@@ -121,7 +149,7 @@ export function CryptoPuzzle({ onSuccess }: CryptoPuzzleProps) {
             </div>
             <div className="w-full bg-muted rounded-full h-2">
               <div 
-                className="bg-primary h-2 rounded-full transition-all duration-300"
+                className="bg-primary h-2 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${(currentLevel / puzzles.length) * 100}%` }}
               />
             </div>
@@ -162,13 +190,14 @@ export function CryptoPuzzle({ onSuccess }: CryptoPuzzleProps) {
                 <Input
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyDown}
                   placeholder="Enter decoded text..."
                   className="font-mono"
+                  disabled={isChecking}
                 />
-                <Button onClick={checkAnswer} disabled={!userInput.trim()}>
+                <Button onClick={checkAnswer} disabled={!userInput.trim() || isChecking}>
                   <Lock className="h-4 w-4 mr-2" />
-                  Submit
+                  {isChecking ? 'Checking...' : 'Submit'}
                 </Button>
               </div>
             </div>

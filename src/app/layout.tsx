@@ -2,10 +2,9 @@
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { SiteFooter } from "@/components/site-footer";
 
-const prisma = new PrismaClient();
 
 export const metadata: Metadata = {
   title: "Bikram's Cyber Fortress | Cybersecurity Analyst & Penetration Tester",
@@ -57,8 +56,20 @@ export default async function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        {/* Preconnect and preload fonts for faster first paint */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="preload"
+          as="style"
+          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+        />
+        <link
+          rel="preload"
+          as="style"
+          href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap"
+        />
         <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet" />
       </head>

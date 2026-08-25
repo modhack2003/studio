@@ -1,11 +1,13 @@
-import { PrismaClient } from '@prisma/client';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { requireAdminSession } from '@/lib/auth';
 
-const prisma = new PrismaClient();
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const authError = requireAdminSession(request);
+  if (authError) return authError;
 
-export async function PUT(_request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const json = await _request.json();
+    const json = await request.json();
     const { id } = await context.params;
     const updated = await prisma.ctfEvent.update({
       where: { id },
@@ -26,7 +28,10 @@ export async function PUT(_request: Request, context: { params: Promise<{ id: st
   }
 }
 
-export async function DELETE(_request: Request, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const authError = requireAdminSession(request);
+  if (authError) return authError;
+
   try {
     const { id } = await context.params;
     await prisma.ctfEvent.delete({ where: { id } });
@@ -35,5 +40,3 @@ export async function DELETE(_request: Request, context: { params: Promise<{ id:
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
-
-

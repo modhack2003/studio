@@ -1,9 +1,11 @@
-import { PrismaClient } from '@prisma/client';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { requireAdminSession } from '@/lib/auth';
 
-const prisma = new PrismaClient();
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authError = requireAdminSession(request);
+  if (authError) return authError;
 
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const json = await request.json();
@@ -19,7 +21,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authError = requireAdminSession(request);
+  if (authError) return authError;
+
   try {
     const { id } = await params;
     await prisma.project.delete({

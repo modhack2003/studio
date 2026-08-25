@@ -1,8 +1,7 @@
 
-import { PrismaClient } from '@prisma/client';
-import { NextResponse } from 'next/server';
-
-const prisma = new PrismaClient();
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { requireAdminSession } from '@/lib/auth';
 
 export async function GET() {
   try {
@@ -13,22 +12,34 @@ export async function GET() {
   }
 }
 
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
+  const authError = requireAdminSession(request);
+  if (authError) return authError;
+
   try {
     const json = await request.json();
     const existingPersonalData = await prisma.personalData.findFirst();
 
     const { id: _id, ...dataToUpdate } = json; // Destructure to omit 'id'
 
+    // Sanitize string fields
+    const allowedFields = ['name', 'title', 'bio', 'github', 'linkedin', 'email', 'resumeUrl'];
+    const sanitized: Record<string, string> = {};
+    for (const field of allowedFields) {
+      if (field in dataToUpdate && typeof dataToUpdate[field] === 'string') {
+        sanitized[field] = dataToUpdate[field].trim();
+      }
+    }
+
     let updatedPersonalData;
     if (existingPersonalData) {
       updatedPersonalData = await prisma.personalData.update({
         where: { id: existingPersonalData.id },
-        data: dataToUpdate, // Use dataToUpdate
+        data: sanitized,
       });
     } else {
       updatedPersonalData = await prisma.personalData.create({
-        data: dataToUpdate, // Use dataToUpdate
+        data: sanitized as { name: string; title: string; bio: string; github: string; linkedin: string; email: string; resumeUrl: string },
       });
     }
 

@@ -25,17 +25,26 @@ interface Certificate {
 }
 
 export function AboutSection({ personalData, education, certificates }: { personalData: PersonalData | null, education: Education[], certificates: Certificate[] }) {
+  const name = personalData?.name || 'Bikram Dey';
+  const bio = personalData?.bio || 'Cybersecurity Analyst and Penetration Tester specializing in network security, vulnerability assessment, and defensive operations.';
+  const github = personalData?.github || 'https://github.com/modhack2003';
+  const linkedin = personalData?.linkedin || 'https://linkedin.com';
+
   const overlayContent = (
     <div className="absolute inset-0 bg-black/70 flex flex-col justify-end p-6 text-white rounded-[15px]">
-      <h3 className="text-xl font-bold">{personalData?.name}</h3>
-      <p className="text-sm">{personalData?.bio}</p>
+      <h3 className="text-xl font-bold">{name}</h3>
+      <p className="text-sm">{bio}</p>
       <div className="flex gap-4 mt-4">
-        <a href={personalData?.github} target="_blank" rel="noopener noreferrer">
-          <Github />
-        </a>
-        <a href={personalData?.linkedin} target="_blank" rel="noopener noreferrer">
-          <Linkedin />
-        </a>
+        {github && (
+          <a href={github} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+            <Github />
+          </a>
+        )}
+        {linkedin && (
+          <a href={linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+            <Linkedin />
+          </a>
+        )}
       </div>
     </div>
   );
