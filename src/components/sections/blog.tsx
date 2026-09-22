@@ -2,8 +2,7 @@ import { CardContent, CardHeader, CardTitle, CardDescription } from '@/component
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, ArrowRight } from 'lucide-react';
-import PixelCard from '../pixel-card';
-import { AnimatedTitle } from '@/components/animated-title';
+import { CardShell } from '@/components/card-shell';
 
 interface BlogPost {
   id: string;
@@ -56,45 +55,36 @@ const blogPosts: BlogPost[] = [
 
 export function BlogSection() {
   return (
-    <section id="blog" className="space-y-12">
-      <div className="text-center">
-        <AnimatedTitle title="Security Insights" />
-        <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-          My thoughts on cybersecurity trends, methodologies, and best practices.
-        </p>
-      </div>
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <section id="blog" className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {blogPosts.map((post) => (
-          <PixelCard key={post.id}>
-            <div className="bg-transparent p-6 rounded-sm h-full flex flex-col">
-              <CardHeader className="p-0 mb-4">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                  <Calendar className="h-3 w-3" />
-                  <span>{new Date(post.publishedAt).toLocaleDateString()}</span>
-                  <Clock className="h-3 w-3 ml-2" />
-                  <span>{post.readTime}</span>
-                </div>
-                <CardTitle className="font-code text-primary text-lg leading-tight">
+          <CardShell key={post.id}>
+            <div className="flex flex-col p-6">
+              <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <span>{new Date(post.publishedAt).toLocaleDateString()}</span>
+                <Clock className="h-3 w-3 ml-2" />
+                <span>{post.readTime}</span>
+              </div>
+              <CardHeader className="p-0">
+                <CardTitle className="text-base leading-snug">
                   {post.title}
                 </CardTitle>
                 <CardDescription className="text-sm">
                   {post.excerpt}
                 </CardDescription>
               </CardHeader>
-              
-              <CardContent className="flex-1 flex flex-col justify-between p-0">
-                <div className="flex flex-wrap gap-2 mb-4">
+              <CardContent className="flex-1 flex flex-col">
+                <div className="mb-4 flex flex-wrap gap-2">
                   {post.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="font-code bg-primary/10 text-primary text-xs">
+                    <Badge key={tag} variant="outline" className="text-xs border-border">
                       {tag}
                     </Badge>
                   ))}
                 </div>
-                
-                <Button 
-                  variant="link" 
-                  className="p-0 h-auto text-accent hover:text-glow-accent self-start"
+                <Button
+                  variant="link"
+                  className="h-auto p-0 text-sm"
                   asChild
                 >
                   <a href={`/blog/${post.slug}`}>
@@ -103,12 +93,12 @@ export function BlogSection() {
                 </Button>
               </CardContent>
             </div>
-          </PixelCard>
+          </CardShell>
         ))}
       </div>
 
       <div className="text-center">
-        <Button variant="outline" className="border-primary/50 text-primary hover:bg-primary/10">
+        <Button variant="outline" className="text-sm">
           View All Posts
         </Button>
       </div>

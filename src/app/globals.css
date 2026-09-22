@@ -4,65 +4,65 @@
 
 @layer base {
   :root {
-    --background: 0 0% 7%; /* #121212 */
-    --foreground: 90 100% 95%;
+    --background: 0 0% 4%;
+    --foreground: 100 4% 88%;
 
-    --card: 0 0% 10%;
-    --card-foreground: 90 100% 95%;
+    --card: 0 0% 7%;
+    --card-foreground: 100 4% 88%;
 
-    --popover: 0 0% 7%;
-    --popover-foreground: 90 100% 95%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 100 4% 88%;
 
-    --primary: 90 100% 50%; /* Electric Green */
-    --primary-foreground: 0 0% 5%;
+    --primary: 120 80% 45%; /* green accent */
+    --primary-foreground: 0 0% 4%;
 
-    --secondary: 90 100% 15%;
-    --secondary-foreground: 90 100% 95%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 100 4% 85%;
 
-    --muted: 90 100% 15%;
-    --muted-foreground: 90 100% 60%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 100 4% 60%;
 
-    --accent: 180 100% 50%; /* Cyan */
-    --accent-foreground: 0 0% 5%;
+    --accent: 120 80% 45%; /* green accent */
+    --accent-foreground: 0 0% 4%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 72% 48%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 90 100% 30%;
-    --input: 90 100% 15%;
-    --ring: 180 100% 50%; /* Cyan for focus rings */
+    --border: 120 80% 25%;
+    --input: 0 0% 12%;
+    --ring: 120 80% 45%;
 
     --radius: 0.3rem;
 
-    --chart-1: 90 100% 50%;
-    --chart-2: 180 100% 50%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --chart-1: 120 80% 45%;
+    --chart-2: 120 80% 45%;
+    --chart-3: 120 70% 40%;
+    --chart-4: 120 60% 35%;
+    --chart-5: 120 50% 30%;
   }
 
   .dark {
-    --background: 0 0% 7%;
-    --foreground: 90 100% 95%;
-    --card: 0 0% 10%;
-    --card-foreground: 90 100% 95%;
-    --popover: 0 0% 7%;
-    --popover-foreground: 90 100% 95%;
-    --primary: 90 100% 50%;
-    --primary-foreground: 0 0% 5%;
-    --secondary: 90 100% 15%;
-    --secondary-foreground: 90 100% 95%;
-    --muted: 90 100% 15%;
-    --muted-foreground: 90 100% 60%;
-    --accent: 180 100% 50%;
-    --accent-foreground: 0 0% 5%;
+    --background: 0 0% 4%;
+    --foreground: 100 4% 88%;
+    --card: 0 0% 7%;
+    --card-foreground: 100 4% 88%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 100 4% 88%;
+    --primary: 120 80% 45%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 100 4% 85%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 100 4% 60%;
+    --accent: 120 80% 45%;
+    --accent-foreground: 0 0% 4%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 90 100% 30%;
-    --input: 90 100% 15%;
-    --ring: 180 100% 50%;
-    --chart-1: 90 100% 50%;
-    --chart-2: 180 100% 50%;
+    --border: 120 80% 25%;
+    --input: 0 0% 12%;
+    --ring: 120 80% 45%;
+    --chart-1: 120 80% 45%;
+    --chart-2: 120 80% 45%;
   }
 }
 
@@ -80,10 +80,11 @@
 
   body {
     @apply bg-background text-foreground;
-    background-image: linear-gradient(rgba(18, 18, 18, 0.9), rgba(18, 18, 18, 0.9)),
-      linear-gradient(to right, hsla(0, 0%, 100%, 0.05) 1px, transparent 1px);
-    background-size: 100% 100%, 3px 3px;
-    text-shadow: 0 0 2px hsl(var(--primary) / 0.5);
+    background-image:
+      linear-gradient(to right, hsla(120 80% 45% / 0.06) 1px, transparent 1px),
+      linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9));
+    background-size: 6px 6px, 100% 100%;
+    text-shadow: 0 0 2px hsl(var(--primary) / 0.45);
     overflow-x: hidden;
   }
 
@@ -116,6 +117,24 @@
       0 0 10px hsl(var(--accent)),
       0 0 20px hsl(var(--accent) / 0.5),
       0 0 30px hsl(var(--accent) / 0.5);
+  }
+
+  .scanline {
+    background: repeating-linear-gradient(to bottom, rgba(80, 255, 80, 0.04) 0px, rgba(80, 255, 80, 0.04) 1px, transparent 1px, transparent 3px);
+  }
+
+  .grid-station {
+    background-image:
+      linear-gradient(to right, hsla(120 80% 45% / 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, hsla(120 80% 45% / 0.08) 1px, transparent 1px);
+  }
+
+  .monofont {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  .section-rule {
+    background-image: linear-gradient(to right, transparent 0, hsl(var(--border)) 40%, transparent 100%);
   }
 }
 
@@ -150,6 +169,39 @@
   }
 }
 
+@keyframes glitch-layer {
+  0%, 100% {
+    transform: translate(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  20% {
+    transform: translate(-3px, 2px);
+  }
+  40% {
+    transform: translate(2px, -1px);
+    opacity: 0.5;
+  }
+  60% {
+    transform: translate(-2px, 1px);
+  }
+  80% {
+    transform: translate(1px, -2px);
+    opacity: 0.7;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 @keyframes fade-in-up {
   from {
     opacity: 0;
@@ -174,6 +226,29 @@
 
 .glitch {
   animation: glitch 1s linear infinite;
+}
+
+.glitch-layer {
+  color: hsl(var(--primary));
+  mix-blend-mode: screen;
+  animation: glitch-layer 2.4s steps(2, end) infinite;
+}
+
+.glitch-layer-2 {
+  color: hsl(0 0% 90%);
+  animation: glitch-layer 3.1s steps(2, end) infinite reverse;
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glitch-layer,
+  .glitch-layer-2,
+  .animate-marquee {
+    animation: none;
+  }
 }
 
 .animate-fade-in-up {

@@ -1,8 +1,6 @@
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { GraduationCap, ShieldCheck, Github, Linkedin } from 'lucide-react';
-import TiltedCard from '@/components/profile-card';
-import PixelCard from '../pixel-card';
-import { AnimatedTitle } from '@/components/animated-title';
+import { GraduationCap, ShieldCheck } from 'lucide-react';
+import { CardShell } from '@/components/card-shell';
 
 interface PersonalData {
   name: string;
@@ -30,85 +28,70 @@ export function AboutSection({ personalData, education, certificates }: { person
   const github = personalData?.github || 'https://github.com/modhack2003';
   const linkedin = personalData?.linkedin || 'https://linkedin.com';
 
-  const overlayContent = (
-    <div className="absolute inset-0 bg-black/70 flex flex-col justify-end p-6 text-white rounded-[15px]">
-      <h3 className="text-xl font-bold">{name}</h3>
-      <p className="text-sm">{bio}</p>
-      <div className="flex gap-4 mt-4">
-        {github && (
-          <a href={github} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
-            <Github />
-          </a>
-        )}
-        {linkedin && (
-          <a href={linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
-            <Linkedin />
-          </a>
-        )}
-      </div>
-    </div>
-  );
-
   return (
-    <section id="about" className="space-y-12">
-      <div className="text-center">
-        <AnimatedTitle title="About Me" />
-        <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-          A little bit about my journey in the digital trenches.
-        </p>
-      </div>
-      <div className="grid md:grid-cols-3 gap-8 items-start">
-        <div className="md:col-span-2">
-          <TiltedCard 
-            imageSrc="https://github.com/modhack2003.png"
-            altText={personalData?.name || ''}
-            containerHeight="400px"
-            imageWidth="400px"
-            imageHeight="400px"
-            mobileImageWidth="300px"
-            mobileImageHeight="300px"
-            overlayContent={overlayContent}
-            displayOverlayContent={true}
-          />
+    <section id="about" className="space-y-10">
+      <div className="grid gap-10 items-start lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <CardShell className="overflow-hidden rounded-none border-0 p-0">
+            <div className="relative h-full min-h-[360px] bg-muted/40">
+              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url("https://github.com/modhack2003.png")' }} />
+              <div className="absolute inset-0 bg-black/65 flex flex-col justify-end p-6">
+                <h3 className="text-2xl font-semibold">{name}</h3>
+                <p className="mt-2 max-w-xl text-sm text-muted-foreground">{bio}</p>
+                <div className="mt-5 flex gap-5">
+                  {github && (
+                    <a href={github} target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-foreground">
+                      <GraduationCap className="h-5 w-5" />
+                      <span className="text-sm">GitHub</span>
+                    </a>
+                  )}
+                  {linkedin && (
+                    <a href={linkedin} target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-foreground">
+                      <ShieldCheck className="h-5 w-5" />
+                      <span className="text-sm">LinkedIn</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardShell>
         </div>
+
         <div className="space-y-6">
-          <PixelCard>
-            <div className="bg-transparent p-6 rounded-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-code text-lg">
-                  <GraduationCap className="text-primary"/>
-                  Education
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {education.map(edu => (
-                  <div key={edu.institution}>
-                    <h3 className="font-semibold">{edu.institution}</h3>
-                    <p className="text-sm text-muted-foreground">{edu.degree}</p>
-                    <p className="text-xs text-muted-foreground/80">{edu.duration}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </div>
-          </PixelCard>
-           <PixelCard>
-            <div className="bg-transparent p-6 rounded-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-code text-lg">
-                  <ShieldCheck className="text-primary"/>
-                  Certificates
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {certificates.map(cert => (
-                  <div key={cert.name}>
-                    <h3 className="font-semibold text-sm">{cert.name}</h3>
-                    <p className="text-xs text-muted-foreground">{cert.issuer} - {cert.year}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </div>
-          </PixelCard>
+          <CardShell>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <GraduationCap className="h-5 w-5" />
+                Education
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {education.map(edu => (
+                <div key={edu.institution}>
+                  <h3 className="font-semibold">{edu.institution}</h3>
+                  <p className="text-sm text-muted-foreground">{edu.degree}</p>
+                  <p className="text-xs text-muted-foreground/70">{edu.duration}</p>
+                </div>
+              ))}
+            </CardContent>
+          </CardShell>
+
+          <CardShell>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <ShieldCheck className="h-5 w-5" />
+                Certificates
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {certificates.map(cert => (
+                <div key={cert.name}>
+                  <h3 className="font-semibold text-sm">{cert.name}</h3>
+                  <p className="text-xs text-muted-foreground">{cert.issuer} - {cert.year}</p>
+                </div>
+              ))}
+            </CardContent>
+          </CardShell>
         </div>
       </div>
     </section>

@@ -1,29 +1,25 @@
-
-import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
-import { prisma } from '@/lib/prisma';
 import { SiteFooter } from "@/components/site-footer";
 
-
-export const metadata: Metadata = {
-  title: "Bikram's Cyber Fortress | Cybersecurity Analyst & Penetration Tester",
-  description: "Professional portfolio of Bikram Dey, a cybersecurity analyst and penetration tester specializing in network security, vulnerability assessment, and security architecture.",
-  keywords: ["cybersecurity", "penetration testing", "security analyst", "vulnerability assessment", "network security", "ethical hacking"],
-  authors: [{ name: "Bikram Dey" }],
-  creator: "Bikram Dey",
+export const metadata = {
+  title: `Utopia Tokyo | Masked. Marked. Watched.`,
+  description: `Step into Utopia Tokyo, where hidden histories converge with a reimagined future, and ancient masks become symbols of untold possibilities.`,
+  keywords: ["cyberpunk", "tokyo", "masks", "futurism", "alternate history", "ritual tech"],
+  authors: [{ name: "Utopia Tokyo" }],
+  creator: "Utopia Tokyo",
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://bikram-portfolio.vercel.app",
-    title: "Bikram's Cyber Fortress | Cybersecurity Professional",
-    description: "Professional portfolio of Bikram Dey, a cybersecurity analyst and penetration tester.",
-    siteName: "Bikram's Cyber Fortress",
+    url: "https://utopiatokyo.com",
+    title: "Utopia Tokyo | Masked. Marked. Watched.",
+    description: `Step into Utopia Tokyo, where hidden histories converge with a reimagined future, and ancient masks become symbols of untold possibilities.`,
+    siteName: "Utopia Tokyo",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Bikram's Cyber Fortress | Cybersecurity Professional",
-    description: "Professional portfolio of Bikram Dey, a cybersecurity analyst and penetration tester.",
+    title: "Utopia Tokyo | Masked. Marked. Watched.",
+    description: `Step into Utopia Tokyo, where hidden histories converge with a reimagined future, and ancient masks become symbols of untold possibilities.`,
   },
   robots: {
     index: true,
@@ -38,20 +34,29 @@ export const metadata: Metadata = {
   },
 };
 
+import { PrismaClient } from '@prisma/client';
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let personalData = null;
-  
+  let plainPersonalData: { name?: string; email?: string; github?: string; linkedin?: string; resumeUrl?: string } | null = null;
+
+  const prisma = new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  });
+
   try {
-    personalData = await prisma.personalData.findFirst();
+    const record = await prisma.personalData.findFirst();
+    if (record) {
+      plainPersonalData = JSON.parse(JSON.stringify(record));
+    }
   } catch (error) {
     console.error('Database connection failed in layout:', error);
+  } finally {
+    await prisma.$disconnect().catch(() => {});
   }
-  
-  const plainPersonalData = JSON.parse(JSON.stringify(personalData));
 
   return (
     <html lang="en" className="dark">
@@ -75,7 +80,7 @@ export default async function RootLayout({
       </head>
       <body className="font-body antialiased">
         {children}
-        <SiteFooter personalData={plainPersonalData} />
+        <SiteFooter personalData={plainPersonalData as Parameters<typeof SiteFooter>[0]['personalData']} />
         <Toaster />
       </body>
     </html>

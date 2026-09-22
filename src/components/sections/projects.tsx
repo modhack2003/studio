@@ -2,9 +2,8 @@ import { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
-import PixelCard from '../pixel-card';
-import { AnimatedTitle } from '@/components/animated-title';
+import { ArrowRight, Star, GitFork } from 'lucide-react';
+import { CardShell } from '@/components/card-shell';
 
 interface Project {
   title: string;
@@ -32,32 +31,25 @@ interface GitHubRepository {
 
 export function ProjectsSection({ projects, githubRepos }: { projects: Project[], githubRepos: GitHubRepository[] }) {
   return (
-    <section id="projects" className="space-y-12">
-      <div className="text-center">
-        <AnimatedTitle title="My Projects" />
-        <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-          A selection of my work. See what I&apos;ve been building.
-        </p>
-      </div>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-2 gap-6">
-        {/* Database Projects */}
+    <section id="projects" className="space-y-6">
+      <div className="grid gap-6 sm:grid-cols-2">
         {projects.map((project) => (
-          <PixelCard key={`db-${project.title}`}>
-            <div className="flex flex-col bg-transparent p-6 rounded-sm h-full">
+          <CardShell key={`db-${project.title}`}>
+            <div className="flex flex-col p-6">
               <CardHeader>
-                <CardTitle className="font-code text-primary">{project.title}</CardTitle>
-                <CardDescription>{project.description}</CardDescription>
+                <CardTitle className="text-base">{project.title}</CardTitle>
+                <CardDescription className="text-sm">{project.description}</CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
                 <div className="flex flex-wrap gap-2">
                   {project.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="font-code bg-primary/10 text-primary">{tag}</Badge>
+                    <Badge key={tag} variant="outline" className="text-xs border-border">{tag}</Badge>
                   ))}
                 </div>
               </CardContent>
               {project.link && (
-                <CardFooter>
-                  <Button asChild variant="link" className="p-0 h-auto text-accent hover:text-glow-accent">
+                <CardFooter className="-mt-4">
+                  <Button asChild variant="link" className="h-auto p-0 text-sm">
                     <Link href={project.link} target="_blank" rel="noopener noreferrer">
                       View Project <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
@@ -65,48 +57,44 @@ export function ProjectsSection({ projects, githubRepos }: { projects: Project[]
                 </CardFooter>
               )}
             </div>
-          </PixelCard>
+          </CardShell>
         ))}
-        
-        {/* GitHub Repositories */}
+
         {githubRepos.map((repo) => (
-          <PixelCard key={`gh-${repo.id}`}>
-            <div className="flex flex-col bg-transparent p-6 rounded-sm h-full">
+          <CardShell key={`gh-${repo.id}`}>
+            <div className="flex flex-col p-6">
               <CardHeader>
-                <CardTitle className="font-code text-primary">
+                <CardTitle className="text-base">
                   {repo.customTitle || repo.name}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm">
                   {repo.customDescription || repo.description || 'No description available'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {/* Custom tags or GitHub topics */}
                   {(repo.customTags && repo.customTags.length > 0 ? repo.customTags : repo.topics).map((tag) => (
-                    <Badge key={tag} variant="secondary" className="font-code bg-primary/10 text-primary">{tag}</Badge>
+                    <Badge key={tag} variant="outline" className="text-xs border-border">{tag}</Badge>
                   ))}
-                  {/* Language badge */}
                   {repo.language && (
-                    <Badge variant="outline" className="font-code text-xs">
+                    <Badge variant="outline" className="text-xs border-border">
                       {repo.language}
                     </Badge>
                   )}
                 </div>
-                {/* GitHub stats */}
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span>⭐ {repo.stargazersCount}</span>
-                  <span>🍴 {repo.forksCount}</span>
+                  <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5" />{repo.stargazersCount}</span>
+                  <span className="inline-flex items-center gap-1"><GitFork className="h-3.5 w-3.5" />{repo.forksCount}</span>
                 </div>
               </CardContent>
-              <CardFooter className="flex gap-2">
-                <Button asChild variant="link" className="p-0 h-auto text-accent hover:text-glow-accent flex-1">
+              <CardFooter className="flex gap-2 -mt-4">
+                <Button asChild variant="link" className="h-auto p-0 text-sm">
                   <Link href={repo.htmlUrl} target="_blank" rel="noopener noreferrer">
                     View on GitHub <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
                 {repo.homepage && (
-                  <Button asChild variant="outline" size="sm" className="flex-1">
+                  <Button asChild variant="outline" size="sm" className="text-sm">
                     <Link href={repo.homepage} target="_blank" rel="noopener noreferrer">
                       Live Demo
                     </Link>
@@ -114,7 +102,7 @@ export function ProjectsSection({ projects, githubRepos }: { projects: Project[]
                 )}
               </CardFooter>
             </div>
-          </PixelCard>
+          </CardShell>
         ))}
       </div>
     </section>
