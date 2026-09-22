@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Github, Linkedin, Mail, FileText, type LucideIcon } from 'lucide-react';
-import { AnimatedTitle } from '@/components/animated-title';
 import { ContactForm } from '@/components/contact-form';
+import { CardShell } from '@/components/card-shell';
 
 interface PersonalData {
   email: string;
@@ -28,35 +28,28 @@ export function ContactSection({ personalData }: { personalData: PersonalData | 
   ];
 
   return (
-    <section id="contact" className="space-y-12">
-      <div className="text-center">
-        <AnimatedTitle title="Get In Touch" />
-        <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-          Have a question or a project in mind? Let&apos;s connect.
-        </p>
-      </div>
-      
-      <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-        {/* Contact Form */}
-        <div>
-          <ContactForm />
-        </div>
-        
-        {/* Contact Links */}
+    <section id="contact" className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2">
+        <CardShell>
+          <div className="p-6">
+            <ContactForm />
+          </div>
+        </CardShell>
+
         <div className="space-y-6">
-          <div className="space-y-4">
-            <Button asChild size="lg" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 hover:text-glow">
+          <div className="space-y-3">
+            <Button asChild size="lg" className="w-full">
               <a href={`mailto:${personalData.email}`}>Send me an Email</a>
             </Button>
             <p className="text-sm text-muted-foreground text-center">
               Or connect with me on these platforms:
             </p>
           </div>
-          
-          <div className="grid grid-cols-2 gap-4">
+
+          <div className="grid gap-3 sm:grid-cols-2">
             {contactLinks.map((link) => (
-              <Button asChild key={link.label} variant="outline" className="border-primary/50 text-primary hover:bg-primary/10 hover:border-primary h-16 flex-col space-y-2">
-                <Link href={link.href} target="_blank" rel="noopener noreferrer">
+              <Button asChild key={link.label} variant="outline" className="h-auto p-4 flex flex-col items-start gap-3 rounded-none">
+                <Link href={link.href} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 text-center">
                   <link.icon className="h-5 w-5" />
                   <span className="text-sm font-medium">{link.label}</span>
                 </Link>

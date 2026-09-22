@@ -1,8 +1,7 @@
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Code, Terminal, BrainCircuit } from 'lucide-react';
-import PixelCard from '../pixel-card';
-import { AnimatedTitle } from '@/components/animated-title';
+import { CardShell } from '@/components/card-shell';
 
 interface Skills {
   languages: string[];
@@ -20,35 +19,28 @@ export function SkillsSection({ skills }: { skills: Skills | null }) {
   ];
 
   return (
-    <section id="skills" className="space-y-12">
-        <div className="text-center">
-            <AnimatedTitle title="My Arsenal" />
-            <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-            The languages, tools, and technologies I use to build and secure applications.
-            </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-            {skillSections.map(section => (
-                <PixelCard key={section.title}>
-                  <div className="bg-transparent p-6 rounded-sm h-full">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 font-code text-lg">
-                            <section.icon className="text-primary" />
-                            {section.title}
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-wrap gap-2">
-                        {section.items.map(skill => (
-                            <Badge key={skill} variant="outline" className="font-code text-sm border-primary/50 text-primary/90">
-                                {skill}
-                            </Badge>
-                        ))}
-                    </CardContent>
-                    </div>
-                </PixelCard>
-            ))}
-        </div>
+    <section id="skills" className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-3">
+        {skillSections.map(section => (
+          <CardShell key={section.title}>
+            <div className="p-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <section.icon className="h-5 w-5" />
+                  {section.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                {section.items.map(skill => (
+                  <Badge key={skill} variant="outline" className="text-xs border-border">
+                    {skill}
+                  </Badge>
+                ))}
+              </CardContent>
+            </div>
+          </CardShell>
+        ))}
+      </div>
     </section>
   );
 }

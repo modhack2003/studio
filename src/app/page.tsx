@@ -8,10 +8,20 @@ import { BlogSection } from "@/components/sections/blog";
 import { ContactSection } from "@/components/sections/contact";
 import { CtfSection } from "@/components/sections/ctf";
 import { Separator } from "@/components/ui/separator";
-import { prisma } from '@/lib/prisma';
-// Removed sample-data fallback per request; database only
+import { MaskedGenerator } from "@/components/sections/masked-generator";
+import { CityHeader } from "@/components/sections/city-header";
+import { PrismaClient } from '@prisma/client';
+import { HeaderNav } from '@/components/header-nav';
+import { SectionTitle } from '@/components/section-title';
+import { CardShell } from '@/components/card-shell';
 
-async function getPortfolioData() {
+function createPrismaClient() {
+  return new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  });
+}
+
+async function getPortfolioData(prisma: PrismaClient) {
   try {
     // Optimize queries with select only needed fields and limit results
     const [dbPersonalData, dbProjects, dbGithubRepos, dbSkills, dbCertificates, dbEducation, dbCtf] = await Promise.all([
@@ -24,16 +34,16 @@ async function getPortfolioData() {
       }),
       prisma.gitHubRepository.findMany({
         where: { displayInPortfolio: true },
-        select: { 
-          id: true, 
-          name: true, 
-          fullName: true, 
-          description: true, 
-          htmlUrl: true, 
-          language: true, 
-          topics: true, 
-          stargazersCount: true, 
-          forksCount: true, 
+        select: {
+          id: true,
+          name: true,
+          fullName: true,
+          description: true,
+          htmlUrl: true,
+          language: true,
+          topics: true,
+          stargazersCount: true,
+          forksCount: true,
           homepage: true,
           customTitle: true,
           customDescription: true,
@@ -57,7 +67,7 @@ async function getPortfolioData() {
         select: { id: true, institution: true, degree: true, duration: true },
         take: 5 // Limit education entries
       }),
-      prisma.ctfEvent.findMany({ 
+      prisma.ctfEvent.findMany({
         select: { id: true, name: true, organizer: true, date: true, categories: true },
         orderBy: { date: 'desc' },
         take: 10 // Limit CTF events
@@ -85,32 +95,51 @@ async function getPortfolioData() {
       education: [],
       ctfEvents: [],
     };
-  } finally {
-    // Prisma client is managed globally, no need to disconnect
   }
 }
 
 export default async function Home() {
   // Load only essential data for fast page load - remove AI dependency completely
-  const portfolioData = await getPortfolioData();
+  const prisma = createPrismaClient();
+  const portfolioData = await getPortfolioData(prisma);
   const { personalData, projects, githubRepos, skills, certificates, education, ctfEvents } = portfolioData;
 
   return (
     <div className="flex min-h-screen flex-col">
-      <MainNav />
+      <HeaderNav personalData={personalData} />
       <main className="flex-1">
         <HeroSection personalData={personalData} />
-        <div className="container mx-auto px-4 py-16 sm:py-24 space-y-24">
+        <div className="mx-auto max-w-5xl px-6 py-20 sm:px-8 space-y-28">
+          <SectionTitle id="about" eyebrow="Section 01" title="About Me" subtitle="A little bit about my journey in the digital trenches." />
           <AboutSection personalData={personalData} certificates={certificates} education={education} />
-          <Separator className="my-8 bg-primary/20" />
+
+          <div className="section-rule h-px" />
+
+          <SectionTitle id="projects" eyebrow="Section 02" title="My Projects" subtitle="A selection of my work. See what I&apos;ve been building." />
           <ProjectsSection projects={projects} githubRepos={githubRepos} />
-          <Separator className="my-8 bg-primary/20" />
+
+          <div className="section-rule h-px" />
+
+          <MaskedGenerator />
+
+          <div className="section-rule h-px" />
+
+          <SectionTitle id="ctf" eyebrow="Section 03" title="CTF Competitions" subtitle="Competitive cybersecurity challenges I have participated in and highlights." />
           <CtfSection events={ctfEvents || []} />
-          <Separator className="my-8 bg-primary/20" />
+
+          <div className="section-rule h-px" />
+
+          <SectionTitle id="skills" eyebrow="Section 04" title="My Arsenal" subtitle="The languages, tools, and technologies I use to build and secure applications." />
           <SkillsSection skills={skills} />
-          <Separator className="my-8 bg-primary/20" />
+
+          <div className="section-rule h-px" />
+
+          <SectionTitle id="blog" eyebrow="Section 05" title="Security Insights" subtitle="My thoughts on cybersecurity trends, methodologies, and best practices." />
           <BlogSection />
-          <Separator className="my-8 bg-primary/20" />
+
+          <div className="section-rule h-px" />
+
+          <SectionTitle id="contact" eyebrow="Section 06" title="Get In Touch" subtitle="Have a question or a project in mind? Let&apos;s connect." />
           <ContactSection personalData={personalData} />
         </div>
       </main>
