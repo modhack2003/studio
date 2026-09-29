@@ -1,8 +1,5 @@
-import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, ArrowRight } from 'lucide-react';
-import { CardShell } from '@/components/card-shell';
+import { ArrowUpRight } from 'lucide-react';
+import { Reveal } from '@/components/cyber/primitives';
 
 interface BlogPost {
   id: string;
@@ -55,53 +52,43 @@ const blogPosts: BlogPost[] = [
 
 export function BlogSection() {
   return (
-    <section id="blog" className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {blogPosts.map((post) => (
-          <CardShell key={post.id}>
-            <div className="flex flex-col p-6">
-              <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                <span>{new Date(post.publishedAt).toLocaleDateString()}</span>
-                <Clock className="h-3 w-3 ml-2" />
-                <span>{post.readTime}</span>
-              </div>
-              <CardHeader className="p-0">
-                <CardTitle className="text-base leading-snug">
-                  {post.title}
-                </CardTitle>
-                <CardDescription className="text-sm">
-                  {post.excerpt}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col">
-                <div className="mb-4 flex flex-wrap gap-2">
-                  {post.tags.map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-xs border-border">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-                <Button
-                  variant="link"
-                  className="h-auto p-0 text-sm"
-                  asChild
-                >
-                  <a href={`/blog/${post.slug}`}>
-                    Read More <ArrowRight className="ml-2 h-4 w-4" />
-                  </a>
-                </Button>
-              </CardContent>
+    <section className="grid gap-px border border-signal/40 bg-signal/40 md:grid-cols-3">
+      {blogPosts.map((post, i) => (
+        <Reveal key={post.id} delay={i * 0.1} className="bg-background">
+          <a
+            href={`/blog/${post.slug}`}
+            className="group relative flex h-full min-h-[380px] flex-col overflow-hidden p-6 transition-colors duration-500 hover:bg-signal hover:text-ink"
+          >
+            <div className="flex items-center justify-between monofont text-[10px] uppercase tracking-[0.3em] text-signal group-hover:text-ink">
+              <span>TX-{String(i + 1).padStart(3, '0')}</span>
+              <span>{new Date(post.publishedAt).toLocaleDateString()}</span>
             </div>
-          </CardShell>
-        ))}
-      </div>
 
-      <div className="text-center">
-        <Button variant="outline" className="text-sm">
-          View All Posts
-        </Button>
-      </div>
+            <span aria-hidden className="mt-6 font-display text-[6rem] font-bold leading-none text-outline-red transition-all duration-500 group-hover:text-outline-ink group-hover:tracking-widest">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+
+            <h3 className="mt-4 font-display text-2xl font-bold uppercase leading-tight text-bone group-hover:text-ink">{post.title}</h3>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground group-hover:text-ink/80">{post.excerpt}</p>
+
+            <div className="mt-auto pt-6">
+              <div className="flex flex-wrap gap-2">
+                {post.tags.map((tag) => (
+                  <span key={tag} className="border border-signal/40 px-2 py-0.5 monofont text-[10px] uppercase tracking-wider group-hover:border-ink/50">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-5 flex items-center justify-between border-t border-signal/30 pt-4 monofont text-[11px] uppercase tracking-[0.2em] group-hover:border-ink/40">
+                <span>{post.readTime}</span>
+                <span className="flex items-center gap-1">
+                  Read More <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                </span>
+              </div>
+            </div>
+          </a>
+        </Reveal>
+      ))}
     </section>
   );
 }

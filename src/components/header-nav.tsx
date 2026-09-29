@@ -1,8 +1,6 @@
 'use client';
 
-import { PersonalIcon } from '@/components/personal-icon';
 import { MainNav } from '@/components/main-nav';
-import { SiteFooter } from '@/components/site-footer';
 
 interface PersonalData {
   name: string;
@@ -13,10 +11,5 @@ interface PersonalData {
 }
 
 export function HeaderNav({ personalData }: { personalData: PersonalData | null }) {
-  return (
-    <>
-      <MainNav />
-      <SiteFooter personalData={personalData} />
-    </>
-  );
+  return <MainNav name={personalData?.name || undefined} />;
 }

@@ -1,25 +1,30 @@
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 import { SiteFooter } from "@/components/site-footer";
+import { ExperienceGate } from "@/components/cyber/experience-gate";
+import { CyberCursor } from "@/components/cyber/cyber-cursor";
+
+const SITE_TITLE = 'Bikram Dey | Hack. Secure. Defend.';
+const SITE_DESCRIPTION =
+  'Cybersecurity analyst & penetration tester. Signals from the digital trenches — projects, CTF operations, arsenal and transmissions.';
 
 export const metadata = {
-  title: `Utopia Tokyo | Masked. Marked. Watched.`,
-  description: `Step into Utopia Tokyo, where hidden histories converge with a reimagined future, and ancient masks become symbols of untold possibilities.`,
-  keywords: ["cyberpunk", "tokyo", "masks", "futurism", "alternate history", "ritual tech"],
-  authors: [{ name: "Utopia Tokyo" }],
-  creator: "Utopia Tokyo",
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  keywords: ['cybersecurity', 'penetration testing', 'CTF', 'red team', 'portfolio', 'Bikram Dey'],
+  authors: [{ name: 'Bikram Dey' }],
+  creator: 'Bikram Dey',
   openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "https://utopiatokyo.com",
-    title: "Utopia Tokyo | Masked. Marked. Watched.",
-    description: `Step into Utopia Tokyo, where hidden histories converge with a reimagined future, and ancient masks become symbols of untold possibilities.`,
-    siteName: "Utopia Tokyo",
+    type: 'website',
+    locale: 'en_US',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    siteName: 'Bikram Dey',
   },
   twitter: {
-    card: "summary_large_image",
-    title: "Utopia Tokyo | Masked. Marked. Watched.",
-    description: `Step into Utopia Tokyo, where hidden histories converge with a reimagined future, and ancient masks become symbols of untold possibilities.`,
+    card: 'summary_large_image',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
   },
   robots: {
     index: true,
@@ -32,6 +37,10 @@ export const metadata = {
       'max-snippet': -1,
     },
   },
+};
+
+export const viewport = {
+  themeColor: '#12141c',
 };
 
 import { PrismaClient } from '@prisma/client';
@@ -59,26 +68,23 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        {/* Preconnect and preload fonts for faster first paint */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
-          rel="preload"
-          as="style"
-          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Tektur:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+JP:wght@400;700;900&display=swap"
+          rel="stylesheet"
         />
-        <link
-          rel="preload"
-          as="style"
-          href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap"
-        />
-        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
+        <ExperienceGate />
+        <CyberCursor />
+        {/* CRT overlays (scanlines + grain) */}
+        <div aria-hidden className="pointer-events-none fixed inset-0 z-[70] scanline opacity-[0.35] mix-blend-multiply" />
+        <div aria-hidden className="pointer-events-none fixed inset-0 z-[70] noise opacity-[0.05]" />
         {children}
         <SiteFooter personalData={plainPersonalData as Parameters<typeof SiteFooter>[0]['personalData']} />
         <Toaster />

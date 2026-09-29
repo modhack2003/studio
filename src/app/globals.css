@@ -2,281 +2,310 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   NEON_DISTRICT // design tokens
+   Ink (#12141c) · Signal Red (#ff1f1f) · Bone (#e9e2d0) · Cyan (#1fd6c6)
+   ========================================================================== */
+
 @layer base {
-  :root {
-    --background: 0 0% 4%;
-    --foreground: 100 4% 88%;
-
-    --card: 0 0% 7%;
-    --card-foreground: 100 4% 88%;
-
-    --popover: 0 0% 5%;
-    --popover-foreground: 100 4% 88%;
-
-    --primary: 120 80% 45%; /* green accent */
-    --primary-foreground: 0 0% 4%;
-
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 100 4% 85%;
-
-    --muted: 0 0% 12%;
-    --muted-foreground: 100 4% 60%;
-
-    --accent: 120 80% 45%; /* green accent */
-    --accent-foreground: 0 0% 4%;
-
-    --destructive: 0 72% 48%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 120 80% 25%;
-    --input: 0 0% 12%;
-    --ring: 120 80% 45%;
-
-    --radius: 0.3rem;
-
-    --chart-1: 120 80% 45%;
-    --chart-2: 120 80% 45%;
-    --chart-3: 120 70% 40%;
-    --chart-4: 120 60% 35%;
-    --chart-5: 120 50% 30%;
-  }
-
+  :root,
   .dark {
-    --background: 0 0% 4%;
-    --foreground: 100 4% 88%;
-    --card: 0 0% 7%;
-    --card-foreground: 100 4% 88%;
-    --popover: 0 0% 5%;
-    --popover-foreground: 100 4% 88%;
-    --primary: 120 80% 45%;
-    --primary-foreground: 0 0% 4%;
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 100 4% 85%;
-    --muted: 0 0% 12%;
-    --muted-foreground: 100 4% 60%;
-    --accent: 120 80% 45%;
-    --accent-foreground: 0 0% 4%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 120 80% 25%;
-    --input: 0 0% 12%;
-    --ring: 120 80% 45%;
-    --chart-1: 120 80% 45%;
-    --chart-2: 120 80% 45%;
+    --background: 228 22% 9%;
+    --foreground: 42 33% 87%;
+    --card: 228 22% 11%;
+    --card-foreground: 42 33% 87%;
+    --popover: 228 22% 8%;
+    --popover-foreground: 42 33% 87%;
+    --primary: 0 100% 56%;
+    --primary-foreground: 228 22% 9%;
+    --secondary: 228 16% 16%;
+    --secondary-foreground: 42 33% 87%;
+    --muted: 228 16% 14%;
+    --muted-foreground: 40 10% 62%;
+    --accent: 175 75% 48%;
+    --accent-foreground: 228 22% 9%;
+    --destructive: 18 100% 55%;
+    --destructive-foreground: 228 22% 9%;
+    --border: 0 70% 38%;
+    --input: 228 16% 20%;
+    --ring: 0 100% 56%;
+    --radius: 0rem;
+    --chart-1: 0 100% 56%;
+    --chart-2: 175 75% 48%;
+    --chart-3: 42 33% 87%;
+    --chart-4: 0 70% 38%;
+    --chart-5: 228 16% 40%;
+
+    /* raw palette for inline use */
+    --ink: 228 22% 9%;
+    --red: 0 100% 56%;
+    --bone: 42 33% 87%;
+    --cyan: 175 75% 48%;
   }
 }
 
 @layer base {
-  html {
-    scroll-behavior: smooth;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-  }
-
   * {
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-background text-foreground;
-    background-image:
-      linear-gradient(to right, hsla(120 80% 45% / 0.06) 1px, transparent 1px),
-      linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9));
-    background-size: 6px 6px, 100% 100%;
-    text-shadow: 0 0 2px hsl(var(--primary) / 0.45);
+    font-feature-settings: 'ss01', 'ss02';
     overflow-x: hidden;
   }
 
-  /* Smooth transitions for interactive elements */
-  a, button, input, textarea, select {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  ::selection {
+    background: hsl(var(--red));
+    color: hsl(var(--ink));
   }
 
-  /* GPU acceleration for animated elements */
-  .animate-typing,
-  .glitch,
-  [class*="animate-"] {
-    will-change: transform, opacity;
-    transform: translateZ(0);
-    backface-visibility: hidden;
+  /* thin red scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--ink));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--red));
   }
 }
 
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
 @layer utilities {
+  .monofont {
+    font-family: 'JetBrains Mono', 'Source Code Pro', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .font-display {
+    font-family: 'Tektur', 'Space Grotesk', sans-serif;
+  }
+
+  .font-jp {
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+
+  /* hollow / outline text — the TOKYO look */
+  .text-outline {
+    color: transparent;
+    -webkit-text-stroke: 1.5px currentColor;
+  }
+  .text-outline-ink {
+    color: transparent;
+    -webkit-text-stroke: 1.5px hsl(var(--ink));
+  }
+  .text-outline-red {
+    color: transparent;
+    -webkit-text-stroke: 1.5px hsl(var(--red));
+  }
+  .text-outline-bone {
+    color: transparent;
+    -webkit-text-stroke: 1px hsl(var(--bone) / 0.5);
+  }
+
   .text-glow {
-    text-shadow:
-      0 0 5px hsl(var(--primary)),
-      0 0 10px hsl(var(--primary)),
-      0 0 20px hsl(var(--primary) / 0.5),
-      0 0 30px hsl(var(--primary) / 0.5);
+    text-shadow: 0 0 12px hsl(var(--red) / 0.55);
   }
   .text-glow-accent {
-    text-shadow:
-      0 0 5px hsl(var(--accent)),
-      0 0 10px hsl(var(--accent)),
-      0 0 20px hsl(var(--accent) / 0.5),
-      0 0 30px hsl(var(--accent) / 0.5);
+    text-shadow: 0 0 12px hsl(var(--cyan) / 0.55);
+  }
+
+  /* crosshair grid (the + marks on every intersection) */
+  .grid-cross {
+    background-image:
+      radial-gradient(circle, hsl(var(--red) / 0.35) 1px, transparent 1.5px),
+      linear-gradient(hsl(var(--red) / 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--red) / 0.07) 1px, transparent 1px);
+    background-size: 96px 96px, 96px 96px, 96px 96px;
+    background-position: -48px -48px, 0 0, 0 0;
+  }
+  .grid-cross-ink {
+    background-image:
+      linear-gradient(hsl(var(--ink) / 0.14) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--ink) / 0.14) 1px, transparent 1px);
+    background-size: 96px 96px;
   }
 
   .scanline {
-    background: repeating-linear-gradient(to bottom, rgba(80, 255, 80, 0.04) 0px, rgba(80, 255, 80, 0.04) 1px, transparent 1px, transparent 3px);
-  }
-
-  .grid-station {
-    background-image:
-      linear-gradient(to right, hsla(120 80% 45% / 0.08) 1px, transparent 1px),
-      linear-gradient(to bottom, hsla(120 80% 45% / 0.08) 1px, transparent 1px);
-  }
-
-  .monofont {
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 2px,
+      hsl(0 0% 0% / 0.18) 3px
+    );
   }
 
   .section-rule {
-    background-image: linear-gradient(to right, transparent 0, hsl(var(--border)) 40%, transparent 100%);
+    background: linear-gradient(90deg, transparent, hsl(var(--red) / 0.6), transparent);
+  }
+
+  /* chamfered corner panels */
+  .clip-notch {
+    clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+  }
+  .clip-notch-sm {
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .perspective {
+    perspective: 1200px;
+  }
+
+  .noise {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='.55'/></svg>");
   }
 }
 
-@keyframes typing {
-  from {
-    width: 0;
-  }
-  to {
-    width: 100%;
-  }
+/* ==========================================================================
+   Bracket corners [ ] — used on buttons / cards
+   ========================================================================== */
+.bracket {
+  position: relative;
+}
+.bracket::before,
+.bracket::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.bracket::before {
+  top: -4px;
+  left: -4px;
+  border-top: 2px solid currentColor;
+  border-left: 2px solid currentColor;
+}
+.bracket::after {
+  bottom: -4px;
+  right: -4px;
+  border-bottom: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+}
+.bracket:hover::before {
+  top: -8px;
+  left: -8px;
+}
+.bracket:hover::after {
+  bottom: -8px;
+  right: -8px;
 }
 
-@keyframes blink-caret {
-  from,
-  to {
-    border-color: transparent;
-  }
-  50% {
-    border-color: hsl(var(--primary));
-  }
+/* ==========================================================================
+   Keyframes
+   ========================================================================== */
+@keyframes marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
 }
-
-@keyframes glitch {
-  2%,64% {
-    transform: translate(2px,0) skew(0deg);
-  }
-  4%,60% {
-    transform: translate(-2px,0) skew(0deg);
-  }
-  62% {
-    transform: translate(0,0) skew(5deg);
-  }
+@keyframes marquee-rev {
+  from { transform: translate3d(-50%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
 }
+.animate-marquee { animation: marquee 32s linear infinite; }
+.animate-marquee-fast { animation: marquee 18s linear infinite; }
+.animate-marquee-rev { animation: marquee-rev 36s linear infinite; }
 
 @keyframes glitch-layer {
-  0%, 100% {
-    transform: translate(0);
-    opacity: 0;
-  }
-  10% {
-    opacity: 0.8;
-  }
-  20% {
-    transform: translate(-3px, 2px);
-  }
-  40% {
-    transform: translate(2px, -1px);
-    opacity: 0.5;
-  }
-  60% {
-    transform: translate(-2px, 1px);
-  }
-  80% {
-    transform: translate(1px, -2px);
-    opacity: 0.7;
-  }
+  0%, 86%, 95%, 100% { clip-path: inset(0 0 100% 0); transform: translate(0); }
+  88% { clip-path: inset(12% 0 60% 0); transform: translate(-6px, 1px); }
+  90% { clip-path: inset(55% 0 20% 0); transform: translate(6px, -1px); }
+  92% { clip-path: inset(30% 0 45% 0); transform: translate(-3px, 0); }
+  94% { clip-path: inset(75% 0 5% 0); transform: translate(4px, 1px); }
+}
+.glitch-layer {
+  color: hsl(var(--cyan));
+  animation: glitch-layer 4.5s steps(1) infinite;
+  pointer-events: none;
+}
+.glitch-layer-2 {
+  color: hsl(var(--red));
+  animation-delay: 0.12s;
+  animation-duration: 5.2s;
+}
+.on-red .glitch-layer { color: hsl(var(--cyan)); }
+.on-red .glitch-layer-2 { color: hsl(var(--bone)); }
+
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.animate-blink { animation: blink 1s steps(1) infinite; }
+
+@keyframes typing {
+  from { width: 0; }
+  to { width: 100%; }
+}
+@keyframes blink-caret {
+  from, to { border-color: transparent; }
+  50% { border-color: hsl(var(--red)); }
+}
+.animate-typing {
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 0.15em solid hsl(var(--red));
+  animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
 }
 
-@keyframes marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
+@keyframes scan-y {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
 }
+.animate-scan { animation: scan-y 6s linear infinite; }
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow { animation: spin-slow 22s linear infinite; }
+
+@keyframes flicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
+  20%, 24%, 55% { opacity: 0.35; }
+}
+.animate-flicker { animation: flicker 4s linear infinite; }
 
 @keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+.animate-fade-in-up { animation: fade-in-up 0.7s ease-out both; }
+.animate-fade-in { animation: fade-in 0.6s ease-out both; }
 
-.animate-typing {
-  animation:
-    typing 3.5s steps(40, end),
-    blink-caret 0.75s step-end infinite;
-}
-
-.glitch {
-  animation: glitch 1s linear infinite;
-}
-
-.glitch-layer {
-  color: hsl(var(--primary));
-  mix-blend-mode: screen;
-  animation: glitch-layer 2.4s steps(2, end) infinite;
-}
-
-.glitch-layer-2 {
-  color: hsl(0 0% 90%);
-  animation: glitch-layer 3.1s steps(2, end) infinite reverse;
-}
-
-.animate-marquee {
-  animation: marquee 30s linear infinite;
+/* ==========================================================================
+   Safe mode (set by the experience-warning gate) + reduced motion
+   ========================================================================== */
+html.safe-mode .glitch-layer,
+html.safe-mode .animate-flicker,
+html.safe-mode .animate-scan {
+  animation: none !important;
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .glitch-layer,
-  .glitch-layer-2,
-  .animate-marquee {
-    animation: none;
-  }
-}
-
-.animate-fade-in-up {
-  animation: fade-in-up 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.animate-fade-in {
-  animation: fade-in 0.4s ease-out forwards;
-}
-
-/* Smooth section reveal on scroll */
-section {
-  animation: fade-in-up 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
-}
-
-/* Reduce motion for users who prefer it */
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-  
+  html { scroll-behavior: auto; }
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
   }
+  .glitch-layer { display: none; }
 }
-

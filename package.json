@@ -58,6 +58,7 @@
     "recharts": "^2.15.1",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
+    "three": "^0.170.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -67,6 +68,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/three": "^0.170.0",
     "eslint": "9.33.0",
     "eslint-config-next": "^15.5.23",
     "jest": "^30.2.0",
