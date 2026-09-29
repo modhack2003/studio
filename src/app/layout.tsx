@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 import { SiteFooter } from "@/components/site-footer";
+import { getFooterData } from "@/lib/portfolio-data";
 import { ExperienceGate } from "@/components/cyber/experience-gate";
 import { CyberCursor } from "@/components/cyber/cyber-cursor";
 
@@ -43,29 +44,14 @@ export const viewport = {
   themeColor: '#12141c',
 };
 
-import { PrismaClient } from '@prisma/client';
+export const revalidate = 60;
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let plainPersonalData: { name?: string; email?: string; github?: string; linkedin?: string; resumeUrl?: string } | null = null;
-
-  const prisma = new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  });
-
-  try {
-    const record = await prisma.personalData.findFirst();
-    if (record) {
-      plainPersonalData = JSON.parse(JSON.stringify(record));
-    }
-  } catch (error) {
-    console.error('Database connection failed in layout:', error);
-  } finally {
-    await prisma.$disconnect().catch(() => {});
-  }
+  const footerData = await getFooterData();
 
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
@@ -86,7 +72,7 @@ export default async function RootLayout({
         <div aria-hidden className="pointer-events-none fixed inset-0 z-[70] scanline opacity-[0.35] mix-blend-multiply" />
         <div aria-hidden className="pointer-events-none fixed inset-0 z-[70] noise opacity-[0.05]" />
         {children}
-        <SiteFooter personalData={plainPersonalData as Parameters<typeof SiteFooter>[0]['personalData']} />
+        <SiteFooter personalData={footerData} />
         <Toaster />
       </body>
     </html>

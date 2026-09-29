@@ -30,32 +30,34 @@ export function ContactForm() {
     }));
   };
 
+  const [website, setWebsite] = useState(''); // honeypot — humans never see this field
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      // Simulate form submission (you can integrate with your preferred email service)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, website }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || 'Please try again or contact me directly via email.');
+      }
+
       setIsSubmitted(true);
       toast({
-        title: "Message sent successfully!",
+        title: 'Message sent successfully!',
         description: "Thank you for reaching out. I'll get back to you soon.",
       });
-      
-      // Reset form
-      setFormData({
-        name: '',
-        email: '',
-        subject: '',
-        message: ''
-      });
-    } catch (_error) {
+      setFormData({ name: '', email: '', subject: '', message: '' });
+    } catch (error) {
       toast({
-        title: "Error sending message",
-        description: "Please try again or contact me directly via email.",
-        variant: "destructive",
+        title: 'Error sending message',
+        description: error instanceof Error ? error.message : 'Please try again or contact me directly via email.',
+        variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);
@@ -95,6 +97,10 @@ export function ContactForm() {
         </span>
       </div>
       <form onSubmit={handleSubmit} className="space-y-7 p-6 sm:p-8">
+        <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+          <label htmlFor="website">Website</label>
+          <input id="website" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
+        </div>
         <div className="grid grid-cols-1 gap-7 md:grid-cols-2">
           <div className="relative">
             <input id="name" name="name" value={formData.name} onChange={handleInputChange} required placeholder="Name" className={fieldClass} />

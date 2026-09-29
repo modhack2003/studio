@@ -1,37 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { requireAdminSession } from '@/lib/auth';
+import { certificateHandlers } from '@/lib/collections';
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const authError = requireAdminSession(request);
-  if (authError) return authError;
-
-  try {
-    const { id } = await params;
-    const json = await request.json();
-    const { id: _omittedId, ...dataToUpdate } = json;
-
-    const updatedCertificate = await prisma.certificate.update({
-      where: { id: id },
-      data: dataToUpdate,
-    });
-    return NextResponse.json(updatedCertificate);
-  } catch (_error) {
-    return new NextResponse('Internal Server Error', { status: 500 });
-  }
-}
-
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const authError = requireAdminSession(request);
-  if (authError) return authError;
-
-  try {
-    const { id } = await params;
-    await prisma.certificate.delete({
-      where: { id: id },
-    });
-    return new NextResponse(null, { status: 204 });
-  } catch (_error) {
-    return new NextResponse('Internal Server Error', { status: 500 });
-  }
-}
+export const PUT = certificateHandlers.PUT;
+export const DELETE = certificateHandlers.DELETE;

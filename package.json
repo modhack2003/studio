@@ -4,8 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack -p 9002",
-    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -13,7 +11,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "prisma:seed": "tsx prisma/seed.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:push": "prisma db push",
+    "github:sync": "tsx scripts/sync-github.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -45,6 +45,7 @@
     "date-fns": "^3.6.0",
     "dotenv": "^16.5.0",
     "embla-carousel-react": "^8.6.0",
+    "fflate": "^0.8.3",
     "framer-motion": "^13.1.1",
     "lucide-react": "^0.475.0",
     "motion": "^12.23.12",

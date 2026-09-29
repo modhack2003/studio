@@ -1,152 +1,112 @@
-import type { NextRequest, NextResponse } from 'next/server';
+/**
+ * Pure (database-free) security helpers.
+ * Database-backed session / lockout logic lives in `admin-auth.ts`.
+ */
 import crypto from 'crypto';
 
-// Session secret used to sign session tokens
-const SESSION_SECRET = process.env.SESSION_SECRET || process.env.ADMIN_PIN || 'fallback-secret-change-me';
+export const PIN_MIN_LENGTH = 6;
+export const PIN_MAX_LENGTH = 12;
 
-/**
- * Generate a cryptographically secure session token.
- * The token is an HMAC of a random nonce + timestamp, so it can't be forged
- * without knowing SESSION_SECRET.
- */
-export function generateSessionToken(): string {
-  const nonce = crypto.randomBytes(32).toString('hex');
-  const timestamp = Date.now().toString();
-  const payload = `${nonce}:${timestamp}`;
-  const hmac = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('hex');
-  return `${payload}:${hmac}`;
-}
-
-/**
- * Validate a session token by recomputing the HMAC.
- */
-export function validateSessionToken(token: string): boolean {
-  if (!token || typeof token !== 'string') return false;
-
-  const parts = token.split(':');
-  if (parts.length !== 3) return false;
-
-  const [nonce, timestamp, providedHmac] = parts;
-
-  // Check token age — expire after 6 hours
-  const tokenAge = Date.now() - parseInt(timestamp, 10);
-  if (isNaN(tokenAge) || tokenAge > 6 * 60 * 60 * 1000 || tokenAge < 0) {
-    return false;
-  }
-
-  const expectedHmac = crypto
-    .createHmac('sha256', SESSION_SECRET)
-    .update(`${nonce}:${timestamp}`)
-    .digest('hex');
-
-  // Timing-safe comparison
-  try {
-    return crypto.timingSafeEqual(
-      Buffer.from(providedHmac, 'hex'),
-      Buffer.from(expectedHmac, 'hex')
-    );
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Timing-safe PIN comparison to prevent timing attacks.
- */
+/** Timing-safe comparison of a submitted PIN with a plain-text PIN (env fallback). */
 export function verifyPin(userPin: string, correctPin: string): boolean {
   if (!userPin || !correctPin) return false;
+  const a = crypto.createHash('sha256').update(userPin).digest();
+  const b = crypto.createHash('sha256').update(correctPin).digest();
+  return crypto.timingSafeEqual(a, b) && userPin.length === correctPin.length;
+}
 
-  // Pad to same length for timing-safe comparison
-  const maxLen = Math.max(userPin.length, correctPin.length);
-  const paddedUser = userPin.padEnd(maxLen, '\0');
-  const paddedCorrect = correctPin.padEnd(maxLen, '\0');
+/* -------------------------------------------------------------------------- */
+/* PIN hashing (scrypt)                                                       */
+/* -------------------------------------------------------------------------- */
+const SCRYPT_N = 16384;
+const SCRYPT_R = 8;
+const SCRYPT_P = 1;
+const KEY_LEN = 32;
 
+export function hashPin(pin: string): string {
+  const salt = crypto.randomBytes(16);
+  const hash = crypto.scryptSync(pin, salt, KEY_LEN, { N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P });
+  return ['scrypt', SCRYPT_N, SCRYPT_R, SCRYPT_P, salt.toString('base64'), hash.toString('base64')].join('$');
+}
+
+export function verifyPinHash(pin: string, stored: string): boolean {
   try {
-    return crypto.timingSafeEqual(
-      Buffer.from(paddedUser),
-      Buffer.from(paddedCorrect)
-    ) && userPin.length === correctPin.length;
+    const [algo, n, r, p, saltB64, hashB64] = stored.split('$');
+    if (algo !== 'scrypt') return false;
+    const expected = Buffer.from(hashB64, 'base64');
+    const actual = crypto.scryptSync(pin, Buffer.from(saltB64, 'base64'), expected.length, {
+      N: Number(n),
+      r: Number(r),
+      p: Number(p),
+    });
+    return crypto.timingSafeEqual(actual, expected);
   } catch {
     return false;
   }
 }
 
-/**
- * Check if the current request has a valid admin session.
- * Use this in API route handlers to protect mutating endpoints.
- *
- * Returns null if authenticated, or a 401 NextResponse if not.
- */
-export function requireAdminSession(request: NextRequest): NextResponse | null {
-  const sessionToken = request.cookies.get('admin_session')?.value;
+/* -------------------------------------------------------------------------- */
+/* PIN policy                                                                  */
+/* -------------------------------------------------------------------------- */
+const COMMON_PINS = new Set([
+  '123456', '654321', '111111', '000000', '123123', '121212', '112233', '159753',
+  '696969', '666666', '777777', '888888', '999999', '555555', '222222', '333333',
+  '444444', '1234567', '12345678', '123456789', '1234567890', '987654321', '147258',
+]);
 
-  if (!sessionToken || !validateSessionToken(sessionToken)) {
-    return Response.json(
-      { error: 'Unauthorized — admin session required' },
-      { status: 401 }
-    ) as unknown as NextResponse;
+function isSequential(pin: string): boolean {
+  let asc = true;
+  let desc = true;
+  for (let i = 1; i < pin.length; i++) {
+    const d = pin.charCodeAt(i) - pin.charCodeAt(i - 1);
+    if (d !== 1) asc = false;
+    if (d !== -1) desc = false;
   }
-
-  return null; // Authenticated
+  return asc || desc;
 }
 
-/**
- * Simple in-memory login rate limiter.
- * Tracks failed attempts per IP to prevent brute-force attacks on the PIN.
- */
-interface LoginAttempt {
-  count: number;
-  firstAttempt: number;
-  lockedUntil: number;
+/** True when a PIN is short or trivially guessable. */
+export function isWeakPin(pin: string): boolean {
+  if (!pin || pin.length < PIN_MIN_LENGTH) return true;
+  if (/^(.)\1+$/.test(pin)) return true; // 000000
+  if (isSequential(pin)) return true; // 123456 / 987654
+  if (/^(\d\d)\1+$/.test(pin) || /^(\d\d\d)\1+$/.test(pin)) return true; // 121212 / 123123
+  return COMMON_PINS.has(pin);
 }
 
-const loginAttempts = new Map<string, LoginAttempt>();
-
-const MAX_ATTEMPTS = 5;
-const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const LOCKOUT_MS = 30 * 60 * 1000; // 30 minutes lockout
-
-export function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfterMs?: number } {
-  const now = Date.now();
-  const entry = loginAttempts.get(ip);
-
-  if (!entry) {
-    return { allowed: true };
+/** Validation for a *new* PIN set from the dashboard. Returns an error message or null. */
+export function validateNewPin(pin: string): string | null {
+  if (!/^\d+$/.test(pin)) return 'PIN must contain digits only.';
+  if (pin.length < PIN_MIN_LENGTH || pin.length > PIN_MAX_LENGTH) {
+    return `PIN must be ${PIN_MIN_LENGTH}–${PIN_MAX_LENGTH} digits.`;
   }
-
-  // Check if locked out
-  if (entry.lockedUntil > now) {
-    return { allowed: false, retryAfterMs: entry.lockedUntil - now };
-  }
-
-  // Reset if window has passed
-  if (now - entry.firstAttempt > WINDOW_MS) {
-    loginAttempts.delete(ip);
-    return { allowed: true };
-  }
-
-  if (entry.count >= MAX_ATTEMPTS) {
-    entry.lockedUntil = now + LOCKOUT_MS;
-    return { allowed: false, retryAfterMs: LOCKOUT_MS };
-  }
-
-  return { allowed: true };
+  if (isWeakPin(pin)) return 'That PIN is too easy to guess (repeated, sequential or common).';
+  return null;
 }
 
-export function recordFailedLogin(ip: string): void {
-  const now = Date.now();
-  const entry = loginAttempts.get(ip);
-
-  if (!entry || now - entry.firstAttempt > WINDOW_MS) {
-    loginAttempts.set(ip, { count: 1, firstAttempt: now, lockedUntil: 0 });
-  } else {
-    entry.count++;
-    if (entry.count >= MAX_ATTEMPTS) {
-      entry.lockedUntil = now + LOCKOUT_MS;
-    }
-  }
+/* -------------------------------------------------------------------------- */
+/* Tokens                                                                      */
+/* -------------------------------------------------------------------------- */
+export function generateSessionToken(): string {
+  return crypto.randomBytes(32).toString('base64url');
 }
 
-export function clearLoginAttempts(ip: string): void {
-  loginAttempts.delete(ip);
+export function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+/** Non-reversible identifier for an IP (used for contact-form throttling). */
+export function hashIp(ip: string): string {
+  return crypto.createHash('sha256').update(`nd-contact:${ip}`).digest('hex').slice(0, 32);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Request helpers                                                             */
+/* -------------------------------------------------------------------------- */
+export function getClientIp(headers: Headers): string {
+  const real = headers.get('x-real-ip');
+  if (real) return real.trim();
+  const fwd = headers.get('x-forwarded-for');
+  if (fwd) return fwd.split(',')[0].trim();
+  return 'unknown';
 }

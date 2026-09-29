@@ -1,51 +1,34 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAdminSession } from '@/lib/auth';
+import { requireAdminSession } from '@/lib/admin-auth';
+import { handleError, jsonError, readJson, revalidatePublic } from '@/lib/api';
+import { personalDataSchema, zodMessage } from '@/lib/validators';
 
 export async function GET() {
   try {
     const personalData = await prisma.personalData.findFirst();
     return NextResponse.json(personalData);
-  } catch (_error) {
-    return new NextResponse('Internal Server Error', { status: 500 });
+  } catch (error) {
+    return handleError(error, 'Profile');
   }
 }
 
+/** Creates the profile if none exists yet, otherwise updates it. */
 export async function PUT(request: NextRequest) {
-  const authError = requireAdminSession(request);
-  if (authError) return authError;
+  const denied = await requireAdminSession(request);
+  if (denied) return denied;
+
+  const parsed = personalDataSchema.safeParse((await readJson(request)) ?? {});
+  if (!parsed.success) return jsonError(zodMessage(parsed.error), 400);
 
   try {
-    const json = await request.json();
-    const existingPersonalData = await prisma.personalData.findFirst();
-
-    const { id: _id, ...dataToUpdate } = json; // Destructure to omit 'id'
-
-    // Sanitize string fields
-    const allowedFields = ['name', 'title', 'bio', 'github', 'linkedin', 'email', 'resumeUrl'];
-    const sanitized: Record<string, string> = {};
-    for (const field of allowedFields) {
-      if (field in dataToUpdate && typeof dataToUpdate[field] === 'string') {
-        sanitized[field] = dataToUpdate[field].trim();
-      }
-    }
-
-    let updatedPersonalData;
-    if (existingPersonalData) {
-      updatedPersonalData = await prisma.personalData.update({
-        where: { id: existingPersonalData.id },
-        data: sanitized,
-      });
-    } else {
-      updatedPersonalData = await prisma.personalData.create({
-        data: sanitized as { name: string; title: string; bio: string; github: string; linkedin: string; email: string; resumeUrl: string },
-      });
-    }
-
-    return NextResponse.json(updatedPersonalData);
+    const existing = await prisma.personalData.findFirst({ select: { id: true } });
+    const saved = existing
+      ? await prisma.personalData.update({ where: { id: existing.id }, data: parsed.data })
+      : await prisma.personalData.create({ data: parsed.data });
+    revalidatePublic();
+    return NextResponse.json(saved);
   } catch (error) {
-    console.error("Error updating personal data:", error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    return handleError(error, 'Profile');
   }
 }

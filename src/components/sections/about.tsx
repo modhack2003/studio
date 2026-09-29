@@ -7,6 +7,7 @@ interface PersonalData {
   github: string;
   linkedin: string;
   title: string;
+  avatarUrl?: string | null;
 }
 
 interface Education {
@@ -19,16 +20,19 @@ interface Certificate {
   name: string;
   issuer: string;
   year: number;
+  url?: string | null;
 }
 
 export function AboutSection({
   personalData,
   education,
   certificates,
+  experienceCount = 0,
 }: {
   personalData: PersonalData | null;
   education: Education[];
   certificates: Certificate[];
+  experienceCount?: number;
 }) {
   const name = personalData?.name || 'Bikram Dey';
   const bio =
@@ -37,6 +41,7 @@ export function AboutSection({
   const github = personalData?.github || 'https://github.com/modhack2003';
   const linkedin = personalData?.linkedin || 'https://linkedin.com';
   const title = personalData?.title || 'Cybersecurity Analyst & Penetration Tester';
+  const avatar = personalData?.avatarUrl || 'https://github.com/modhack2003.png';
 
   return (
     <section className="grid gap-12 lg:grid-cols-12">
@@ -46,7 +51,7 @@ export function AboutSection({
           <div className="relative aspect-[4/5] overflow-hidden border border-signal/60 bg-ink">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://github.com/modhack2003.png"
+              src={avatar}
               alt={name}
               className="absolute inset-0 h-full w-full object-cover grayscale contrast-125"
               loading="lazy"
@@ -109,7 +114,7 @@ export function AboutSection({
         <Reveal className="grid grid-cols-2 border border-signal/40 sm:grid-cols-3">
           {[
             ['Certs', certificates.length, '認定'],
-            ['Education', education.length, '学歴'],
+            experienceCount > 0 ? ['Roles', experienceCount, '経歴'] : ['Education', education.length, '学歴'],
             ['Status', 'ACTIVE', '状態'],
           ].map(([k, v, jp]) => (
             <div key={String(k)} className="border-b border-r border-signal/40 p-5 last:border-r-0 sm:border-b-0">
@@ -152,15 +157,29 @@ export function AboutSection({
             <ul className="space-y-3">
               {certificates.map((cert, i) => (
                 <Reveal as="li" key={cert.name} delay={i * 0.06}>
-                  <div className="clip-notch-sm group relative flex items-center justify-between gap-4 bg-card px-4 py-3 transition-colors hover:bg-signal hover:text-ink">
-                    <div>
-                      <p className="text-sm font-semibold">{cert.name}</p>
-                      <p className="monofont text-[10px] uppercase tracking-widest text-muted-foreground group-hover:text-ink/70">
-                        {cert.issuer}
-                      </p>
-                    </div>
-                    <span className="font-display text-xl font-bold text-signal group-hover:text-ink">{cert.year}</span>
-                  </div>
+                  {(() => {
+                    const body = (
+                      <>
+                        <div>
+                          <p className="text-sm font-semibold">{cert.name}</p>
+                          <p className="monofont text-[10px] uppercase tracking-widest text-muted-foreground group-hover:text-ink/70">
+                            {cert.issuer}
+                            {cert.url && ' · verify ↗'}
+                          </p>
+                        </div>
+                        <span className="font-display text-xl font-bold text-signal group-hover:text-ink">{cert.year}</span>
+                      </>
+                    );
+                    const cls =
+                      'clip-notch-sm group relative flex items-center justify-between gap-4 bg-card px-4 py-3 transition-colors hover:bg-signal hover:text-ink';
+                    return cert.url ? (
+                      <a href={cert.url} target="_blank" rel="noopener noreferrer" className={cls}>
+                        {body}
+                      </a>
+                    ) : (
+                      <div className={cls}>{body}</div>
+                    );
+                  })()}
                 </Reveal>
               ))}
             </ul>
