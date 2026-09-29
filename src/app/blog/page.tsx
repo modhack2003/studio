@@ -2,7 +2,7 @@ import { HeaderNav } from '@/components/header-nav';
 import { SectionHeader } from '@/components/cyber/primitives';
 import { BlogCard } from '@/components/sections/blog';
 import { prisma } from '@/lib/prisma';
-import { isBuildPhase, type Jsonify } from '@/lib/portfolio-data';
+import { getHiddenSections, isBuildPhase, type Jsonify } from '@/lib/portfolio-data';
 
 export const revalidate = 60;
 
@@ -27,21 +27,21 @@ async function getPosts() {
 
 async function getNavData() {
   try {
-    const [personal, experienceCount] = await Promise.all([
+    const [personal, hidden] = await Promise.all([
       prisma.personalData.findFirst({ select: { name: true } }),
-      prisma.experience.count(),
+      getHiddenSections(),
     ]);
-    return { personal, hasExperience: experienceCount > 0 };
+    return { personal, hidden };
   } catch {
-    return { personal: null, hasExperience: false };
+    return { personal: null, hidden: [] as string[] };
   }
 }
 
 export default async function BlogIndex() {
-  const [posts, { personal, hasExperience }] = await Promise.all([getPosts(), getNavData()]);
+  const [posts, { personal, hidden }] = await Promise.all([getPosts(), getNavData()]);
   return (
     <div className="flex min-h-screen flex-col">
-      <HeaderNav personalData={personal} hasExperience={hasExperience} solid />
+      <HeaderNav personalData={personal} hidden={hidden} solid />
       <main className="relative flex-1">
         <div aria-hidden className="grid-cross pointer-events-none absolute inset-0 opacity-60" />
         <div className="relative mx-auto max-w-[1440px] space-y-14 px-6 pb-28 pt-36 sm:px-10">

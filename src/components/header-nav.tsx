@@ -12,12 +12,12 @@ interface PersonalData {
 
 export function HeaderNav({
   personalData,
-  hasExperience = false,
+  hidden = [],
   solid = false,
 }: {
   personalData: Pick<PersonalData, 'name'> | null;
-  hasExperience?: boolean;
+  hidden?: string[];
   solid?: boolean;
 }) {
-  return <MainNav name={personalData?.name || undefined} hasExperience={hasExperience} solid={solid} />;
+  return <MainNav name={personalData?.name || undefined} hidden={hidden} solid={solid} />;
 }

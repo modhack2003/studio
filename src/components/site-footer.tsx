@@ -24,7 +24,7 @@ export function SiteFooter({ className, personalData }: React.HTMLAttributes<HTM
     { label: 'LinkedIn', href: personalData?.linkedin ?? '#', icon: Linkedin },
     { label: 'Email', href: `mailto:${personalData?.email ?? ''}`, icon: Mail },
     { label: 'Resume', href: personalData?.resumeUrl ?? '#', icon: FileText },
-  ];
+  ].filter((l) => l.href && l.href !== '#' && l.href !== 'mailto:');
   const name = personalData?.name ?? '';
 
   return (

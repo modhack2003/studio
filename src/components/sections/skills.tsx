@@ -14,13 +14,15 @@ export function SkillsSection({ skills }: { skills: Skills | null }) {
     { title: 'Languages', jp: '言語', code: 'LNG', icon: Code, items: skills.languages },
     { title: 'Tools & Technologies', jp: '道具', code: 'TLS', icon: Terminal, items: skills.tools },
     { title: 'Areas of Expertise', jp: '専門', code: 'EXP', icon: BrainCircuit, items: skills.areas },
-  ];
+  ].filter((s) => s.items.length > 0);
+  if (skillSections.length === 0) return null;
+  const cols = skillSections.length === 1 ? 'md:grid-cols-1 max-w-xl' : skillSections.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3';
 
   const all = [...skills.languages, ...skills.tools, ...skills.areas];
 
   return (
     <section className="space-y-12">
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className={`grid gap-6 ${cols}`}>
         {skillSections.map((section, idx) => (
           <Reveal key={section.title} delay={idx * 0.1}>
             <TiltCard max={10} className="h-full">

@@ -28,11 +28,13 @@ export function AboutSection({
   education,
   certificates,
   experienceCount = 0,
+  repoCount = 0,
 }: {
   personalData: PersonalData | null;
   education: Education[];
   certificates: Certificate[];
   experienceCount?: number;
+  repoCount?: number;
 }) {
   const name = personalData?.name || 'Bikram Dey';
   const bio =
@@ -113,8 +115,12 @@ export function AboutSection({
         {/* counters */}
         <Reveal className="grid grid-cols-2 border border-signal/40 sm:grid-cols-3">
           {[
-            ['Certs', certificates.length, '認定'],
-            experienceCount > 0 ? ['Roles', experienceCount, '経歴'] : ['Education', education.length, '学歴'],
+            ['Repos', repoCount, '倉庫'],
+            experienceCount > 0
+              ? ['Roles', experienceCount, '経歴']
+              : certificates.length > 0
+                ? ['Certs', certificates.length, '認定']
+                : ['Stack', 'LIVE', '技術'],
             ['Status', 'ACTIVE', '状態'],
           ].map(([k, v, jp]) => (
             <div key={String(k)} className="border-b border-r border-signal/40 p-5 last:border-r-0 sm:border-b-0">
@@ -129,8 +135,10 @@ export function AboutSection({
           ))}
         </Reveal>
 
-        <div className="grid gap-10 md:grid-cols-2">
+        {(education.length > 0 || certificates.length > 0) && (
+        <div className={`grid gap-10 ${education.length > 0 && certificates.length > 0 ? 'md:grid-cols-2' : ''}`}>
           {/* education timeline */}
+          {education.length > 0 && (
           <div>
             <h3 className="mb-6 flex items-center justify-between border-b border-signal/40 pb-3 monofont text-xs uppercase tracking-[0.3em] text-signal">
               <span>{'// education.log'}</span>
@@ -147,8 +155,10 @@ export function AboutSection({
               ))}
             </ol>
           </div>
+          )}
 
           {/* certificates */}
+          {certificates.length > 0 && (
           <div>
             <h3 className="mb-6 flex items-center justify-between border-b border-signal/40 pb-3 monofont text-xs uppercase tracking-[0.3em] text-signal">
               <span>{'// clearances'}</span>
@@ -184,7 +194,9 @@ export function AboutSection({
               ))}
             </ul>
           </div>
+          )}
         </div>
+        )}
       </div>
     </section>
   );

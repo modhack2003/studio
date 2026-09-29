@@ -25,15 +25,16 @@ function splitName(name: string) {
 
 export function MainNav({
   name = 'Bikram Dey',
-  hasExperience = false,
+  hidden = [],
   solid = false,
 }: {
   name?: string;
-  hasExperience?: boolean;
+  /** section anchors that have no content right now, e.g. ['#experience', '#ctf'] */
+  hidden?: string[];
   /** inner pages (e.g. /blog): always use the dark bar and link back to the home page sections */
   solid?: boolean;
 }) {
-  const navItems = NAV_ITEMS.filter((i) => hasExperience || i.href !== '#experience').map((i) =>
+  const navItems = NAV_ITEMS.filter((i) => !hidden.includes(i.href)).map((i) =>
     solid && i.href.startsWith('#') ? { ...i, href: `/${i.href}` } : i
   );
   const [scrolled, setIsScrolled] = useState(false);

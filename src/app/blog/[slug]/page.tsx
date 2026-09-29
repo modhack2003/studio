@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { HeaderNav } from '@/components/header-nav';
 import { Markdown } from '@/lib/markdown';
 import { prisma } from '@/lib/prisma';
-import { isBuildPhase, readTime } from '@/lib/portfolio-data';
+import { getHiddenSections, isBuildPhase, readTime } from '@/lib/portfolio-data';
 
 export const revalidate = 60;
 export const dynamicParams = true;
@@ -33,17 +33,16 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  const [post, personal, experienceCount] = await Promise.all([
+  const [post, personal, hidden] = await Promise.all([
     getPost(slug),
     prisma.personalData.findFirst({ select: { name: true } }).catch(() => null),
-    prisma.experience.count().catch(() => 0),
+    getHiddenSections(),
   ]);
-  const hasExperience = experienceCount > 0;
   if (!post) notFound();
 
   return (
     <div className="flex min-h-screen flex-col">
-      <HeaderNav personalData={personal} hasExperience={hasExperience} solid />
+      <HeaderNav personalData={personal} hidden={hidden} solid />
       <main className="relative flex-1">
         <div aria-hidden className="grid-cross pointer-events-none absolute inset-0 opacity-40" />
         <article className="relative mx-auto max-w-3xl px-6 pb-28 pt-36 sm:px-10">

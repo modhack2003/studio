@@ -62,7 +62,7 @@ function toEntries(projects: Project[], repos: GitHubRepository[]): Entry[] {
     key: `gh-${repo.id}`,
     kind: 'repo',
     title: repo.customTitle || repo.name,
-    description: repo.customDescription || repo.description || repo.readmeExcerpt || 'No description available',
+    description: repo.customDescription || repo.description || repo.readmeExcerpt || '',
     tags: repo.customTags && repo.customTags.length > 0 ? repo.customTags : repo.topics,
     language: repo.language,
     stars: repo.stargazersCount,
@@ -152,7 +152,11 @@ export function ProjectsSection({ projects, githubRepos }: { projects: Project[]
                   {current.language ? ` · ${current.language}` : ''}
                 </p>
                 <h3 className="font-display text-2xl font-bold uppercase leading-tight text-bone">{current.title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">{current.description}</p>
+                {current.description ? (
+                  <p className="text-sm leading-relaxed text-muted-foreground">{current.description}</p>
+                ) : (
+                  <p className="monofont text-[11px] uppercase tracking-[0.2em] text-muted-foreground/70">{'// source code on github'}</p>
+                )}
                 {current.kind === 'repo' && (
                   <div className="grid grid-cols-2 border border-signal/30 monofont text-xs">
                     <div className="border-r border-signal/30 p-3">
@@ -241,7 +245,11 @@ export function ProjectsSection({ projects, githubRepos }: { projects: Project[]
                     <h3 className="mt-4 font-display text-2xl font-bold uppercase leading-tight text-bone" style={{ transform: 'translateZ(30px)' }}>
                       {e.title}
                     </h3>
-                    <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{e.description}</p>
+                    {e.description ? (
+                      <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{e.description}</p>
+                    ) : (
+                      <p className="mt-3 monofont text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60">{'// classified — see source'}</p>
+                    )}
                     <div className="mt-auto flex flex-wrap gap-2 pt-5">
                       {e.tags.map((t) => (
                         <span key={t} className="border border-signal/40 px-2 py-0.5 monofont text-[10px] uppercase tracking-wider text-bone/80">

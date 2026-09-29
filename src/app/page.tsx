@@ -20,20 +20,24 @@ export default async function Home() {
     await getPortfolioData();
 
   const hasExperience = experience.length > 0;
+  const hasCtf = ctfEvents.length > 0;
+  const hasSkills = !!skills && skills.languages.length + skills.tools.length + skills.areas.length > 0;
+  const hidden = [!hasExperience && '#experience', !hasCtf && '#ctf', !hasSkills && '#skills'].filter(Boolean) as string[];
+
   let n = 0;
   const idx = () => String(++n).padStart(2, '0');
 
   const aboutIdx = idx();
   const expIdx = hasExperience ? idx() : '';
   const projIdx = idx();
-  const ctfIdx = idx();
-  const skillIdx = idx();
+  const ctfIdx = hasCtf ? idx() : '';
+  const skillIdx = hasSkills ? idx() : '';
   const blogIdx = idx();
   const contactIdx = idx();
 
   return (
     <div className="flex min-h-screen flex-col">
-      <HeaderNav personalData={personalData} hasExperience={hasExperience} />
+      <HeaderNav personalData={personalData} hidden={hidden} />
       <main className="flex-1">
         <HeroSection personalData={personalData} />
 
@@ -42,7 +46,7 @@ export default async function Home() {
           <div className="relative mx-auto max-w-[1440px] space-y-32 px-6 py-28 sm:px-10">
             <div className="space-y-14">
               <SectionHeader id="about" index={aboutIdx} jp="自己紹介" eyebrow={`Section ${aboutIdx} / Dossier`} title="About Me" subtitle="A little bit about my journey in the digital trenches." />
-              <AboutSection personalData={personalData} certificates={certificates} education={education} experienceCount={experience.length} />
+              <AboutSection personalData={personalData} certificates={certificates} education={education} experienceCount={experience.length} repoCount={githubRepos.length} />
             </div>
 
             {hasExperience && (
@@ -59,15 +63,19 @@ export default async function Home() {
 
             <MaskedGenerator />
 
+            {hasCtf && (
             <div className="space-y-14">
               <SectionHeader id="ctf" index={ctfIdx} jp="旗取り" eyebrow={`Section ${ctfIdx} / Operations`} title="CTF Competitions" subtitle="Competitive cybersecurity challenges I have participated in and highlights." />
               <CtfSection events={ctfEvents} />
             </div>
+            )}
 
+            {hasSkills && (
             <div className="space-y-14">
               <SectionHeader id="skills" index={skillIdx} jp="武器庫" eyebrow={`Section ${skillIdx} / Loadout`} title="My Arsenal" subtitle="The languages, tools, and technologies I use to build and secure applications." />
               <SkillsSection skills={skills} />
             </div>
+            )}
 
             <div className="space-y-14">
               <SectionHeader id="blog" index={blogIdx} jp="記録" eyebrow={`Section ${blogIdx} / Transmissions`} title="Security Insights" subtitle="My thoughts on cybersecurity trends, methodologies, and best practices." />

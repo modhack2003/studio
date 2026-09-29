@@ -27,7 +27,7 @@ export function ContactSection({ personalData }: { personalData: PersonalData | 
     { label: 'LinkedIn', href: personalData.linkedin, icon: Linkedin, jp: 'リンク' },
     { label: 'Email', href: `mailto:${personalData.email}`, icon: Mail, jp: 'メール' },
     { label: 'Resume', href: personalData.resumeUrl, icon: FileText, jp: '履歴書' },
-  ];
+  ].filter((l) => l.href && l.href !== 'mailto:');
 
   return (
     <section className="space-y-16">

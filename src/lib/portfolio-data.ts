@@ -147,3 +147,21 @@ export function readTime(content: string): string {
   const words = content.trim().split(/\s+/).filter(Boolean).length;
   return `${Math.max(1, Math.round(words / 220))} min read`;
 }
+
+/** Home-page anchors that currently have no content (used by the nav on inner pages). */
+export async function getHiddenSections(): Promise<string[]> {
+  try {
+    const [exp, ctf, skills] = await Promise.all([
+      prisma.experience.count(),
+      prisma.ctfEvent.count(),
+      prisma.skill.findFirst({ select: { languages: true, tools: true, areas: true } }),
+    ]);
+    const hidden: string[] = [];
+    if (!exp) hidden.push('#experience');
+    if (!ctf) hidden.push('#ctf');
+    if (!skills || skills.languages.length + skills.tools.length + skills.areas.length === 0) hidden.push('#skills');
+    return hidden;
+  } catch {
+    return [];
+  }
+}
