@@ -18,10 +18,16 @@ export default {
     extend: {
       fontFamily: {
         body: ['"Space Grotesk"', 'sans-serif'],
-        headline: ['"Space Grotesk"', 'sans-serif'],
-        code: ['"Source Code Pro"', 'monospace'],
+        headline: ['"Tektur"', '"Space Grotesk"', 'sans-serif'],
+        display: ['"Tektur"', '"Space Grotesk"', 'sans-serif'],
+        code: ['"JetBrains Mono"', '"Source Code Pro"', 'monospace'],
+        jp: ['"Noto Sans JP"', 'sans-serif'],
       },
       colors: {
+        ink: 'hsl(var(--ink))',
+        signal: 'hsl(var(--red))',
+        bone: 'hsl(var(--bone))',
+        cyan: 'hsl(var(--cyan))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

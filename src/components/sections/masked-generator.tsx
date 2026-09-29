@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 interface ProjectOption {
@@ -34,319 +35,257 @@ const PROJECTS: ProjectOption[] = [
   { id: 'xi', name: 'Xi', subtitle: 'Mesh', stats: { impact: 4, reach: 7, precision: 8, speed: 8, depth: 6, coverage: 7 } },
 ];
 
-const STAT_LABELS: { key: keyof NonNullable<ProjectOption['stats']>; label: string; short: string }[] = [
-  { key: 'impact', label: 'Impact', short: 'IMP' },
-  { key: 'reach', label: 'Reach', short: 'RCH' },
-  { key: 'precision', label: 'Precision', short: 'PRE' },
-  { key: 'speed', label: 'Speed', short: 'SPD' },
-  { key: 'depth', label: 'Depth', short: 'DEP' },
-  { key: 'coverage', label: 'Coverage', short: 'COV' },
+const GREEK: Record<string, string> = {
+  alpha: 'Α', beta: 'Β', gamma: 'Γ', delta: 'Δ', epsilon: 'Ε', zeta: 'Ζ', eta: 'Η',
+  theta: 'Θ', iota: 'Ι', kappa: 'Κ', lambda: 'Λ', mu: 'Μ', nu: 'Ν', xi: 'Ξ',
+};
+
+const STAT_LABELS: { key: keyof NonNullable<ProjectOption['stats']>; label: string; short: string; jp: string }[] = [
+  { key: 'impact', label: 'Impact', short: 'IMP', jp: '衝撃' },
+  { key: 'reach', label: 'Reach', short: 'RCH', jp: '到達' },
+  { key: 'precision', label: 'Precision', short: 'PRE', jp: '精度' },
+  { key: 'speed', label: 'Speed', short: 'SPD', jp: '速度' },
+  { key: 'depth', label: 'Depth', short: 'DEP', jp: '深度' },
+  { key: 'coverage', label: 'Coverage', short: 'COV', jp: '範囲' },
 ];
 
 export function MaskedGenerator() {
-  const [selectedProject, setSelectedProject] = useState<ProjectOption | null>(null);
+  const [selectedProject, setSelectedProject] = useState<ProjectOption>(PROJECTS[0]);
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [hash, setHash] = useState<string | null>(null);
-  const [completion, setCompletion] = useState(0);
   const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
   const mountedRef = useRef(true);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const generateHash = useCallback(() => {
-    const hex = Array.from({ length: 6 }, () =>
-      Math.floor(Math.random() * 16).toString(16).toUpperCase()
-    ).join('');
+    const hex = Array.from({ length: 6 }, () => Math.floor(Math.random() * 16).toString(16).toUpperCase()).join('');
     return `0x${hex}`;
   }, []);
 
   const runGeneration = useCallback(() => {
-    if (!selectedProject) return;
+    if (generating) return;
     setGenerating(true);
     setHash(null);
     setProgress(0);
-    setCompletion(0);
 
     let p = 0;
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       if (!mountedRef.current) {
-        clearInterval(interval);
+        if (intervalRef.current) clearInterval(intervalRef.current);
         return;
       }
       p += Math.floor(Math.random() * 12) + 4;
       if (p > 100) p = 100;
       setProgress(p);
-      setCompletion((p / 100) * 60);
-
       if (p >= 100) {
-        clearInterval(interval);
+        if (intervalRef.current) clearInterval(intervalRef.current);
         setGenerating(false);
         setHash(generateHash());
       }
     }, 140);
-  }, [selectedProject, generateHash]);
+  }, [generating, generateHash]);
 
-  const handleSelect = useCallback((project: ProjectOption) => {
-    setSelectedProject(project);
-    setActiveTab('grid');
-  }, []);
+  const handleSelect = useCallback(
+    (project: ProjectOption) => {
+      if (generating) return;
+      setSelectedProject(project);
+      setHash(null);
+      setProgress(0);
+    },
+    [generating]
+  );
+
+  const randomSelect = () => handleSelect(PROJECTS[Math.floor(Math.random() * PROJECTS.length)]);
+  const reset = () => handleSelect(PROJECTS[0]);
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 
+  const block = `S-${(selectedProject.id.length * 7331).toString().slice(0, 5)}`;
+
   return (
-    <section className="relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none scanline opacity-40" />
-      <div className="relative z-10">
-        <div className="flex flex-col items-center gap-3 text-xs monofont uppercase tracking-[0.3em] text-muted-foreground text-center mb-16">
-          <div className="flex items-center justify-center gap-3">
-            <span className="inline-block h-px w-12 bg-primary/60" />
-            <span className="text-primary">Project Generator Terminal</span>
-            <span className="inline-block h-px w-12 bg-primary/60" />
-          </div>
-          <p className="text-[11px] tracking-[0.18em] text-muted-foreground/70">
-            Select a project to initialize analysis
+    <section aria-label="Operation profile generator" className="relative">
+      <div className="mb-10 flex flex-col items-start justify-between gap-6 border-b border-signal/40 pb-8 md:flex-row md:items-end">
+        <div>
+          <p className="mb-4 flex items-center gap-3 monofont text-[10px] uppercase tracking-[0.35em] text-signal">
+            <span className="inline-block h-2 w-2 bg-signal" /> Operation Profile Terminal
           </p>
+          <h2 className="font-display text-5xl font-bold uppercase leading-[0.9] sm:text-7xl">
+            <span className="text-bone">Discover</span> <span className="text-outline-red">your op</span>
+          </h2>
+        </div>
+        <p className="max-w-xs monofont text-[11px] uppercase leading-relaxed tracking-widest text-muted-foreground">
+          Select an operation codename, then execute to compile its profile.
+        </p>
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-[280px_1fr_1fr]">
+        {/* stats */}
+        <div className="order-2 space-y-4 lg:order-1">
+          {STAT_LABELS.map(({ key, label, jp }) => {
+            const value = selectedProject.stats?.[key] ?? 0;
+            return (
+              <div key={key} className="border-b border-signal/30 pb-3">
+                <div className="flex items-end justify-between">
+                  <div>
+                    <div className="font-jp text-xs text-signal/80">{jp}</div>
+                    <div className="monofont text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{label}</div>
+                  </div>
+                  <motion.span
+                    key={`${selectedProject.id}-${key}`}
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="font-display text-3xl font-bold text-bone"
+                  >
+                    {String(value).padStart(2, '0')}
+                  </motion.span>
+                </div>
+                <div className="mt-2 flex gap-[3px]">
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <span
+                      key={i}
+                      className={cn('h-2 flex-1 transition-colors duration-300', i < value ? 'bg-signal' : 'bg-signal/15')}
+                      style={{ transitionDelay: `${i * 25}ms` }}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        <div className="grid lg:grid-cols-[1fr_380px] gap-10 items-start">
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-sm monofont uppercase tracking-wider text-muted-foreground">
-                Project Catalog
-              </span>
-              <div className="flex rounded overflow-hidden border border-border bg-background/50">
-                <button
-                  onClick={() => setActiveTab('grid')}
-                  className={cn(
-                    'px-4 py-1.5 text-xs monofont transition-colors',
-                    activeTab === 'grid'
-                      ? 'bg-primary/20 text-primary'
-                      : 'text-muted-foreground hover:text-primary'
-                  )}
-                  type="button"
-                >
-                  Grid
-                </button>
-                <button
-                  onClick={() => setActiveTab('list')}
-                  className={cn(
-                    'px-4 py-1.5 text-xs monofont transition-colors',
-                    activeTab === 'list'
-                      ? 'bg-primary/20 text-primary'
-                      : 'text-muted-foreground hover:text-primary'
-                  )}
-                  type="button"
-                >
-                  List
-                </button>
-              </div>
-            </div>
-
-            {activeTab === 'grid' ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {PROJECTS.map((project) => (
-                  <button
-                    key={project.id}
-                    onClick={() => handleSelect(project)}
-                    className={cn(
-                      'relative group overflow-hidden rounded border text-left transition-all',
-                      'bg-card border-border hover:border-primary/60',
-                      selectedProject?.id === project.id
-                        ? 'ring-2 ring-primary/70 bg-primary/10'
-                        : 'hover:bg-card/95'
-                    )}
-                    type="button"
-                    aria-pressed={selectedProject?.id === project.id}
-                  >
-                    <span className={cn(
-                      'absolute top-2 right-2 inline-flex h-2 w-2 rounded-full ring-1 ring-inset ring-border transition-colors',
-                      selectedProject?.id === project.id ? 'bg-primary' : 'bg-transparent border border-border'
-                    )}
-                    />
-                    <div className="p-4 monofont text-sm">
-                      <div className="relative">
-                        <span className="block text-base font-medium">{project.name}</span>
-                        {project.subtitle && (
-                          <span className="block text-[10px] text-muted-foreground/70 mt-1 uppercase tracking-wide">
-                            {project.subtitle}
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-2 text-[10px] text-muted-foreground/80 uppercase">
-                        {(project.stats?.impact ?? 0) + (project.stats?.reach ?? 0) + (project.stats?.precision ?? 0) + (project.stats?.speed ?? 0) + (project.stats?.depth ?? 0) + (project.stats?.coverage ?? 0)} pts
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {PROJECTS.map((project) => (
-                  <button
-                    key={project.id}
-                    onClick={() => handleSelect(project)}
-                    className={cn(
-                      'w-full text-left rounded border p-3 transition-all flex items-center justify-between gap-4',
-                      'bg-card border-border hover:border-primary/60',
-                      selectedProject?.id === project.id
-                        ? 'ring-2 ring-primary/70 bg-primary/10'
-                        : 'hover:bg-card/95'
-                    )}
-                    type="button"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm monofont">{project.name}</span>
-                      {project.subtitle && (
-                        <span className="text-xs text-muted-foreground/70 monofont">({project.subtitle})</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 text-xs monofont text-muted-foreground" data-stat-row>
-                    {project.stats?.impact == null
-                      ? '-'
-                      : String(project.stats?.impact ?? 0)}
-                    <span aria-hidden="true"> </span>
-                    {project.stats?.reach == null
-                      ? '-'
-                      : String(project.stats?.reach ?? 0)}
-                    <span aria-hidden="true"> </span>
-                    {project.stats?.precision == null
-                      ? '-'
-                      : String(project.stats?.precision ?? 0)}
-                    <span aria-hidden="true"> </span>
-                    {project.stats?.speed == null
-                      ? '-'
-                      : String(project.stats?.speed ?? 0)}
-                    <span aria-hidden="true"> </span>
-                    {project.stats?.depth == null
-                      ? '-'
-                      : String(project.stats?.depth ?? 0)}
-                    <span aria-hidden="true"> </span>
-                    {project.stats?.coverage == null
-                      ? '-'
-                      : String(project.stats?.coverage ?? 0)}
-                  </div>
-                  </button>
-                ))}
-              </div>
-            )}
+        {/* stage */}
+        <div className="order-1 flex flex-col border border-signal/50 bg-card lg:order-2">
+          <div className="flex items-center justify-between border-b border-signal/40 px-4 py-3 monofont text-[10px] uppercase tracking-[0.3em]">
+            <span className="text-signal">{generating ? 'Generating profile' : hash ? 'Profile ready' : 'Standby'}</span>
+            <span className="text-muted-foreground">BLOCK: {block}</span>
           </div>
 
-          <div className="rounded border border-border bg-card/40 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm monofont uppercase tracking-widest text-primary">
-                Generate Project Profile
-              </h2>
-              {selectedProject && (
-                <span className="text-xs monofont text-muted-foreground">
-                  {selectedProject.name}
+          <div className="perspective relative flex flex-1 items-center justify-center overflow-hidden py-10">
+            <div aria-hidden className="grid-cross absolute inset-0 opacity-60" />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={selectedProject.id}
+                initial={{ rotateY: -90, opacity: 0 }}
+                animate={{ rotateY: 0, opacity: 1 }}
+                exit={{ rotateY: 90, opacity: 0 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="preserve-3d relative flex h-56 w-56 items-center justify-center"
+              >
+                <div className={cn('absolute inset-0 rounded-full border border-dashed border-signal/60', generating && 'animate-spin-slow')} />
+                <div className="absolute inset-6 rounded-full border border-cyan/40" />
+                <span className={cn('font-display text-[8rem] font-bold leading-none text-signal', generating && 'animate-flicker')}>
+                  {GREEK[selectedProject.id]}
                 </span>
-              )}
-            </div>
-
-            {!selectedProject ? (
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Select a project above to initialize analysis.
-              </p>
-            ) : generating ? (
-              <div className="space-y-4">
-                <div className="text-right monofont text-xs">
-                  <span className="text-primary">PROCESSING DATA CHUNKS</span>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>BLOCK: S-733</span>
-                    <span className="monofont text-primary">{progress}%</span>
-                  </div>
-                  <div className="h-2 rounded bg-background/60 overflow-hidden border border-border">
-                    <div
-                      className="h-full w-0 rounded bg-primary transition-all duration-100"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </div>
-                <div className="text-center text-[10px] text-muted-foreground uppercase tracking-widest">
-                  GENERATING PROJECT
-                </div>
-              </div>
-            ) : completion > 0 && completion < 60 ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="uppercase tracking-widest monofont">Projection Score</span>
-                  <span className="monofont text-primary">{Math.round(completion)}</span>
-                </div>
-                <div className="h-2 rounded bg-background/60 overflow-hidden border border-border">
-                  <div
-                    className="h-full w-0 rounded bg-primary transition-all duration-150"
-                    style={{ width: `${completion}%` }}
-                  />
-                </div>
-                <button
-                  onClick={runGeneration}
-                  className="w-full rounded border border-primary/40 px-3 py-2 text-xs monofont uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
-                  type="button"
-                >
-                  Generate
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="text-right monofont text-xs">
-                  <span className="text-primary">PROJECT READY</span>
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-4">
-                  <span className="uppercase tracking-widest monofont">Completion</span>
-                  <span className="monofont text-primary">{Math.round(completion)}%</span>
-                </div>
-                <div className="h-2 rounded bg-background/60 overflow-hidden border border-border">
-                  <div
-                    className="h-full w-full rounded bg-primary"
-                    style={{ width: `${completion}%` }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-4">
-                  <span className="uppercase tracking-widest monofont">HASH</span>
-                  <span className="monofont text-primary">{hash}</span>
-                </div>
-
-                <div className="space-y-2 border-t border-border pt-4 mt-2">
-                  {STAT_LABELS.map(({ key, label, short }) => {
-                    const value = selectedProject.stats?.[key] ?? 0;
-                    return (
-                      <div key={key} className="flex items-center gap-3">
-                        <div className="flex-1 grid grid-cols-2 gap-x-2 gap-y-0.5">
-                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                            {label}
-                          </span>
-                          <span className="text-right text-[10px] uppercase tracking-wider text-muted-foreground">
-                            {short}
-                          </span>
-                        </div>
-                        <span className="w-6 text-right monofont text-primary text-xs">{value}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <button
-                  onClick={() => {
-                    setSelectedProject(null);
-                    setCompletion(0);
-                    setHash(null);
-                  }}
-                  className="w-full rounded border border-border px-3 py-2 text-xs monofont uppercase tracking-wider text-muted-foreground hover:text-primary hover:border-primary/60 transition-colors"
-                  type="button"
-                >
-                  Reset
-                </button>
-              </div>
-            )}
+              </motion.div>
+            </AnimatePresence>
           </div>
+
+          <div className="border-t border-signal/40 p-4">
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="font-display text-3xl font-bold uppercase text-bone">{selectedProject.name}</div>
+                <div className="monofont text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{selectedProject.subtitle}</div>
+              </div>
+              <div className="text-right monofont text-xs">
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground">hash</div>
+                <div className="text-cyan">{hash ?? '0x——————'}</div>
+              </div>
+            </div>
+            <div className="mt-4 h-1.5 overflow-hidden bg-signal/15">
+              <div className="h-full bg-signal transition-all duration-100" style={{ width: `${hash ? 100 : progress}%` }} />
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                onClick={runGeneration}
+                disabled={generating}
+                className="bracket bg-signal px-5 py-3 monofont text-xs uppercase tracking-[0.2em] text-ink transition-colors hover:bg-bone disabled:opacity-60"
+              >
+                {generating ? `Processing ${progress}%` : '>_EXECUTE_CREATION'}
+              </button>
+              <button type="button" onClick={randomSelect} className="monofont text-[10px] uppercase tracking-[0.25em] text-muted-foreground hover:text-signal">
+                Random selection
+              </button>
+              <button type="button" onClick={reset} className="monofont text-[10px] uppercase tracking-[0.25em] text-muted-foreground hover:text-signal">
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* catalog */}
+        <div className="order-3">
+          <div className="mb-4 flex items-center justify-between">
+            <span className="monofont text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Codenames</span>
+            <div className="flex border border-signal/40">
+              {(['grid', 'list'] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setActiveTab(t)}
+                  className={cn(
+                    'px-3 py-1.5 monofont text-[10px] uppercase tracking-[0.25em] transition-colors',
+                    activeTab === t ? 'bg-signal text-ink' : 'text-muted-foreground hover:text-signal'
+                  )}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {activeTab === 'grid' ? (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3">
+              {PROJECTS.map((project) => (
+                <button
+                  key={project.id}
+                  type="button"
+                  onClick={() => handleSelect(project)}
+                  aria-pressed={selectedProject.id === project.id}
+                  className={cn(
+                    'group relative flex aspect-square flex-col items-center justify-center border transition-all duration-300',
+                    selectedProject.id === project.id
+                      ? 'border-signal bg-signal text-ink'
+                      : 'border-signal/25 text-bone hover:-translate-y-1 hover:border-signal'
+                  )}
+                >
+                  <span className="font-display text-3xl font-bold">{GREEK[project.id]}</span>
+                  <span className="monofont text-[9px] uppercase tracking-widest opacity-70">{project.name}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <ul className="border-t border-signal/30">
+              {PROJECTS.map((project) => {
+                const total = STAT_LABELS.reduce((s, { key }) => s + (project.stats?.[key] ?? 0), 0);
+                return (
+                  <li key={project.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(project)}
+                      className={cn(
+                        'flex w-full items-center justify-between border-b border-signal/30 px-2 py-2.5 monofont text-xs transition-colors',
+                        selectedProject.id === project.id ? 'bg-signal text-ink' : 'hover:bg-signal/10'
+                      )}
+                    >
+                      <span>
+                        {GREEK[project.id]} · {project.name}
+                        <span className="ml-2 opacity-60">({project.subtitle})</span>
+                      </span>
+                      <span>{total} pts</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </div>
     </section>

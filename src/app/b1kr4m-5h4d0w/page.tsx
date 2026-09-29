@@ -21,7 +21,7 @@ export default function BikramShadowAccessPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 md:p-12 bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="grid-cross flex min-h-screen flex-col items-center justify-center p-4 pt-20 sm:p-8 md:p-12 bg-gradient-to-br from-background via-background to-primary/10">
       <header className="absolute top-4 left-4">
         <Link href="/" className="flex items-center space-x-2 text-muted-foreground hover:text-primary transition-colors">
           <Terminal className="h-5 w-5" />

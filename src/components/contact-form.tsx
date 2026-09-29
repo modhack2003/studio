@@ -1,14 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Send, CheckCircle } from 'lucide-react';
-import PixelCard from './pixel-card';
+import { Send, CheckCircle } from 'lucide-react';
 
 interface ContactFormData {
   name: string;
@@ -68,111 +62,84 @@ export function ContactForm() {
     }
   };
 
+  const fieldClass =
+    'peer w-full border-0 border-b border-signal/40 bg-transparent px-0 pb-2 pt-6 text-bone outline-none transition-colors placeholder:text-transparent focus:border-signal focus:ring-0';
+  const labelClass =
+    'pointer-events-none absolute left-0 top-0 monofont text-[10px] uppercase tracking-[0.3em] text-muted-foreground transition-colors peer-focus:text-signal';
+
   if (isSubmitted) {
     return (
-      <PixelCard>
-        <div className="bg-transparent p-6 rounded-sm text-center">
-          <CardHeader>
-            <CheckCircle className="mx-auto h-16 w-16 text-primary mb-4" />
-            <CardTitle className="text-2xl font-code text-primary">Message Sent!</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              Thank you for reaching out. I&apos;ll get back to you within 24 hours.
-            </p>
-            <Button 
-              onClick={() => setIsSubmitted(false)}
-              variant="outline"
-              className="border-primary/50 text-primary hover:bg-primary/10"
-            >
-              Send Another Message
-            </Button>
-          </CardContent>
-        </div>
-      </PixelCard>
+      <div className="clip-notch flex min-h-[420px] flex-col items-center justify-center border border-signal/50 bg-card p-10 text-center">
+        <CheckCircle className="mb-6 h-14 w-14 text-signal" />
+        <h3 className="font-display text-3xl font-bold uppercase text-signal">Message Sent!</h3>
+        <p className="mt-4 max-w-sm text-sm text-muted-foreground">
+          Thank you for reaching out. I&apos;ll get back to you within 24 hours.
+        </p>
+        <button
+          type="button"
+          onClick={() => setIsSubmitted(false)}
+          className="bracket mt-8 px-5 py-3 monofont text-xs uppercase tracking-[0.2em] text-signal transition-colors hover:bg-signal hover:text-ink"
+        >
+          Send Another Message
+        </button>
+      </div>
     );
   }
 
   return (
-    <PixelCard>
-      <div className="bg-transparent p-6 rounded-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-code text-lg">
-            <Mail className="text-primary" />
-            Send a Message
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                  className="border-primary/50 focus:border-primary"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  className="border-primary/50 focus:border-primary"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="subject">Subject</Label>
-              <Input
-                id="subject"
-                name="subject"
-                value={formData.subject}
-                onChange={handleInputChange}
-                required
-                className="border-primary/50 focus:border-primary"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="message">Message</Label>
-              <Textarea
-                id="message"
-                name="message"
-                value={formData.message}
-                onChange={handleInputChange}
-                required
-                rows={5}
-                className="border-primary/50 focus:border-primary"
-                placeholder="Tell me about your project or just say hello..."
-              />
-            </div>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4 mr-2" />
-                  Send Message
-                </>
-              )}
-            </Button>
-          </form>
-        </CardContent>
+    <div className="clip-notch border border-signal/50 bg-card">
+      <div className="flex items-center justify-between border-b border-signal/40 px-6 py-3 monofont text-[10px] uppercase tracking-[0.3em] text-signal">
+        <span>{'// Send a Message'}</span>
+        <span className="flex items-center gap-2 text-cyan">
+          <span className="h-1.5 w-1.5 animate-blink bg-cyan" /> aes-256
+        </span>
       </div>
-    </PixelCard>
+      <form onSubmit={handleSubmit} className="space-y-7 p-6 sm:p-8">
+        <div className="grid grid-cols-1 gap-7 md:grid-cols-2">
+          <div className="relative">
+            <input id="name" name="name" value={formData.name} onChange={handleInputChange} required placeholder="Name" className={fieldClass} />
+            <label htmlFor="name" className={labelClass}>Name</label>
+          </div>
+          <div className="relative">
+            <input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} required placeholder="Email" className={fieldClass} />
+            <label htmlFor="email" className={labelClass}>Email</label>
+          </div>
+        </div>
+        <div className="relative">
+          <input id="subject" name="subject" value={formData.subject} onChange={handleInputChange} required placeholder="Subject" className={fieldClass} />
+          <label htmlFor="subject" className={labelClass}>Subject</label>
+        </div>
+        <div className="relative">
+          <textarea
+            id="message"
+            name="message"
+            value={formData.message}
+            onChange={handleInputChange}
+            required
+            rows={5}
+            placeholder="Tell me about your project or just say hello..."
+            className={`${fieldClass} resize-none placeholder:text-muted-foreground/40`}
+          />
+          <label htmlFor="message" className={labelClass}>Message</label>
+        </div>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="bracket flex w-full items-center justify-center gap-3 bg-signal px-6 py-4 monofont text-xs font-bold uppercase tracking-[0.25em] text-ink transition-colors hover:bg-bone disabled:opacity-60"
+        >
+          {isSubmitting ? (
+            <>
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-ink border-b-transparent" />
+              Sending...
+            </>
+          ) : (
+            <>
+              <Send className="h-4 w-4" />
+              Send Message
+            </>
+          )}
+        </button>
+      </form>
+    </div>
   );
 }
