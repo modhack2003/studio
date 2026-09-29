@@ -67,7 +67,7 @@ export function SkillsSection({ skills }: { skills: Skills | null }) {
 
       {all.length > 0 && (
         <div className="-mx-6 space-y-2 border-y border-signal/40 py-4 sm:-mx-10">
-          <Marquee items={all} itemClassName="font-display text-4xl font-bold uppercase text-outline-red sm:text-6xl" separator="✕" />
+          <Marquee items={all} itemClassName="font-display text-4xl font-bold uppercase text-outline-red sm:text-6xl" separator="×" />
           <Marquee items={[...all].reverse()} reverse itemClassName="font-display text-4xl font-bold uppercase text-bone/90 sm:text-6xl" separator="/" />
         </div>
       )}

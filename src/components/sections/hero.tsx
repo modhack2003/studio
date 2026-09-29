@@ -2,14 +2,14 @@
 
 import dynamic from 'next/dynamic';
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GlitchText, Marquee, TickRuler } from '@/components/cyber/primitives';
 
-const HoloCore = dynamic(() => import('@/components/cyber/holo-core').then((m) => m.HoloCore), {
+const SharinganEye = dynamic(() => import('@/components/cyber/sharingan').then((m) => m.SharinganEye), {
   ssr: false,
   loading: () => (
     <div className="flex h-full w-full items-center justify-center monofont text-[10px] uppercase tracking-[0.3em] text-ink/60">
-      compiling core…
+      opening eye…
     </div>
   ),
 });
@@ -69,6 +69,15 @@ export function HeroSection({ personalData }: { personalData: PersonalData | nul
   const nameY = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : -120]);
   const nameSkew = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : -6]);
   const panelY = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : 80]);
+  // the dossier parallax only makes sense in the 3-column desktop layout
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const update = () => setWide(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   return (
     <section id="hero" ref={ref} className="on-red relative overflow-hidden bg-signal pt-16 text-ink">
@@ -158,7 +167,7 @@ export function HeroSection({ personalData }: { personalData: PersonalData | nul
           </div>
 
           {/* dossier */}
-          <motion.div style={{ y: panelY }} className="flex flex-col justify-end border-b border-ink/60 lg:border-b-0 lg:border-r">
+          <motion.div style={wide ? { y: panelY } : undefined} className="flex flex-col justify-end border-b border-ink/60 lg:border-b-0 lg:border-r">
             <div className="border-b border-ink/60 px-4 py-3 monofont text-[10px] uppercase tracking-[0.3em]">
               {'// designation'}
             </div>
@@ -183,12 +192,15 @@ export function HeroSection({ personalData }: { personalData: PersonalData | nul
           {/* 3D core */}
           <div className="relative flex min-h-[420px] flex-col lg:min-h-[560px]">
             <span className="absolute left-3 top-3 z-10 monofont text-[10px] uppercase tracking-[0.3em]">
-              [core_render · webgl]
+              [<span className="font-jp">写輪眼</span>{' // sharingan]'}
             </span>
             <span aria-hidden className="absolute right-3 top-3 z-10 font-jp text-xs">
-              防御 · 攻撃
+              監視中 · watching
             </span>
-            <HoloCore className="absolute inset-0" />
+            <SharinganEye className="absolute inset-0" />
+            <span className="pointer-events-none absolute bottom-14 left-3 z-10 monofont text-[10px] uppercase tracking-[0.3em] text-ink/70">
+              [ tap the eye · <span className="font-jp">万華鏡</span> ]
+            </span>
             <div className="relative mt-auto px-6 pb-4 text-ink">
               <TickRuler label="|||" />
             </div>
@@ -201,7 +213,7 @@ export function HeroSection({ personalData }: { personalData: PersonalData | nul
         <Marquee
           items={KEYWORD_STRIP}
           itemClassName="font-display text-lg font-semibold uppercase tracking-[0.25em]"
-          separator="✕"
+          separator="×"
         />
       </div>
       <div className="relative border-b border-ink/60 py-2 text-ink">
