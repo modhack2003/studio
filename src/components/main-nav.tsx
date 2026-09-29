@@ -6,8 +6,9 @@ import { Menu, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
-const navItems = [
+const NAV_ITEMS = [
   { name: 'About', href: '#about', jp: '自己' },
+  { name: 'Work', href: '#experience', jp: '経歴' },
   { name: 'Projects', href: '#projects', jp: '作品' },
   { name: 'CTF', href: '#ctf', jp: '旗' },
   { name: 'Skills', href: '#skills', jp: '武器' },
@@ -22,8 +23,21 @@ function splitName(name: string) {
   return [parts.slice(0, -1).join(' '), parts[parts.length - 1]];
 }
 
-export function MainNav({ name = 'Bikram Dey' }: { name?: string }) {
-  const [isScrolled, setIsScrolled] = useState(false);
+export function MainNav({
+  name = 'Bikram Dey',
+  hasExperience = false,
+  solid = false,
+}: {
+  name?: string;
+  hasExperience?: boolean;
+  /** inner pages (e.g. /blog): always use the dark bar and link back to the home page sections */
+  solid?: boolean;
+}) {
+  const navItems = NAV_ITEMS.filter((i) => hasExperience || i.href !== '#experience').map((i) =>
+    solid && i.href.startsWith('#') ? { ...i, href: `/${i.href}` } : i
+  );
+  const [scrolled, setIsScrolled] = useState(false);
+  const isScrolled = solid || scrolled;
   const [open, setOpen] = useState(false);
   const [clock, setClock] = useState('');
   const [first, last] = splitName(name);
@@ -63,7 +77,7 @@ export function MainNav({ name = 'Bikram Dey' }: { name?: string }) {
         {/* coordinates bar */}
         <div
           className={cn(
-            'hidden flex-1 items-center justify-between border-b px-6 monofont text-[10px] uppercase tracking-[0.3em] lg:flex',
+            'hidden flex-1 items-center justify-between border-b px-6 monofont text-[10px] uppercase tracking-[0.3em] xl:flex',
             isScrolled ? 'border-signal/40 text-bone/70' : 'border-ink/60 text-ink'
           )}
         >
@@ -74,7 +88,7 @@ export function MainNav({ name = 'Bikram Dey' }: { name?: string }) {
         {/* desktop nav */}
         <nav
           className={cn(
-            'ml-auto hidden items-center gap-1 border-b pl-4 md:flex',
+            'ml-auto hidden items-center gap-0.5 border-b pl-4 lg:flex',
             isScrolled ? 'border-signal/40' : 'border-ink/60'
           )}
         >
@@ -83,7 +97,7 @@ export function MainNav({ name = 'Bikram Dey' }: { name?: string }) {
               key={item.href}
               href={item.href}
               className={cn(
-                'group relative overflow-hidden px-3 py-2 monofont text-[11px] uppercase tracking-[0.2em] transition-colors',
+                'group relative overflow-hidden px-2.5 py-2 monofont text-[11px] uppercase tracking-[0.18em] transition-colors',
                 isScrolled ? 'text-bone/80 hover:text-ink' : 'text-ink hover:text-signal'
               )}
             >
@@ -102,7 +116,7 @@ export function MainNav({ name = 'Bikram Dey' }: { name?: string }) {
         </nav>
 
         {/* mobile */}
-        <div className="ml-auto flex items-center md:hidden">
+        <div className="ml-auto flex items-center lg:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <button

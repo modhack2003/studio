@@ -1,114 +1,45 @@
-# Setup Guide for Bikram's Cyber Fortress
+# Setup
 
-## Prerequisites
-- Node.js (v18 or higher)
-- MongoDB (local installation or MongoDB Atlas)
-- npm or yarn
+## 1. Environment
+Copy `.env.example` to `.env` and fill it in (on Vercel: *Settings → Environment Variables*).
 
-## Environment Setup
+| Variable | Required | Notes |
+|---|---|---|
+| `DATABASE_URL` | yes | MongoDB Atlas URI **including the database name** (`…mongodb.net/portfolio?…`). URL-encode special characters in the password (`@` → `%40`). |
+| `ADMIN_PIN` | yes (first login) | 6–12 digits. After logging in, change it in **Admin → Security** — the new PIN is stored hashed in MongoDB and `ADMIN_PIN` stops working. |
+| `GITHUB_TOKEN` | no | Read-only token; raises GitHub's rate limit for the sync. |
+| `GITHUB_USERNAME` | no | Fallback if the profile has no GitHub URL (default `modhack2003`). |
+| `BLOB_READ_WRITE_TOKEN` | no | Only for uploading a resume PDF (Vercel Blob). You can paste a resume link instead. |
 
-1. **Create a `.env` file** in the root directory with the following variables:
-
-```env
-# Database
-DATABASE_URL="mongodb://localhost:27017/bikram-portfolio"
-# OR for MongoDB Atlas:
-# DATABASE_URL="mongodb+srv://username:password@cluster.mongodb.net/bikram-portfolio"
-
-# Google AI (for GitHub achievements - optional)
-GOOGLE_AI_API_KEY="your-google-ai-api-key-here"
-
-# Vercel Blob (for resume uploads - optional)
-BLOB_READ_WRITE_TOKEN="your-vercel-blob-token-here"
-
-# Admin PIN
-ADMIN_PIN="1234"
-```
-
-2. **Install dependencies:**
+## 2. Install & database
 ```bash
 npm install
+npm run db:push        # creates the new collections + unique indexes (safe, keeps data)
+npm run prisma:seed    # sample data — skipped automatically if the DB already has a profile
+npm run dev            # http://localhost:9002
 ```
 
-3. **Set up the database:**
+## 3. Admin console
+1. Go to `/b1kr4m-5h4d0w` and solve the puzzle (or open `/bikram` directly).
+2. Enter the PIN. 5 wrong attempts lock that IP for 15 minutes; every attempt is logged.
+3. Sessions last 12 h (2 h idle) and survive reloads. Log out, "sign out other devices" and the login history are in **Security**.
+
+`/admin` is a decoy that never logs in.
+
+**Forgot the PIN?** Delete the document in the `AdminCredential` collection (Atlas → Browse Collections); login falls back to `ADMIN_PIN`.
+
+## 4. Content
+- **GitHub → Sync now** pulls your avatar, location and every public repo. New repos (not forks/archived) are shown automatically; toggle, pin or rename them in the same tab. Repos without a description use the first paragraph of their README. The site shows pinned + the 5 latest repos, with a "show all" button.
+  CLI alternative: `npm run github:sync`.
+- **LinkedIn import:** LinkedIn blocks automated reads, so request your data export (*Settings & Privacy → Data privacy → Get a copy of your data*) and drop the `.zip` in **Admin → LinkedIn import**. It previews first; nothing is saved until you press *Import now*. Imports profile headline/summary, experience, education, certifications, projects and skills.
+- **Inbox:** contact-form messages are stored in MongoDB (rate-limited, with a honeypot).
+- **Blog:** write posts in Markdown; only published posts appear, at `/blog/<slug>`.
+
+Every save refreshes the public pages immediately; otherwise they re-render at most once a minute.
+
+## Tests
 ```bash
-# If using MongoDB locally, make sure MongoDB is running
-# Then run the seed script to populate with sample data
-npm run prisma:seed
+npm test            # unit tests
+npm run typecheck
+npm run lint
 ```
-
-4. **Start the development server:**
-```bash
-npm run dev
-```
-
-The application will be available at `http://localhost:9002`
-
-## Features Added
-
-### ✅ Completed Improvements:
-
-1. **Database Population**: Added realistic cybersecurity portfolio content
-2. **Contact Form**: Interactive contact form with validation
-3. **Blog Section**: Security insights and cybersecurity articles
-4. **Error Handling**: Comprehensive error boundaries and loading states
-5. **Performance Optimization**: Parallel database queries and optimized data fetching
-6. **SEO Enhancement**: Meta tags, Open Graph, and structured data
-7. **Loading States**: Skeleton loaders for better UX
-8. **Enhanced Navigation**: Added blog section to navigation
-
-### 🔧 Technical Improvements:
-
-- **Optimized Database Queries**: Using Promise.all for parallel execution
-- **Error Boundaries**: Graceful error handling throughout the app
-- **TypeScript**: Improved type safety and error prevention
-- **Responsive Design**: Enhanced mobile experience
-- **Accessibility**: Better ARIA labels and keyboard navigation
-
-### 📊 Sample Content Includes:
-
-- **Personal Information**: Professional cybersecurity profile
-- **Projects**: 5 detailed cybersecurity projects with descriptions
-- **Skills**: Comprehensive technical skills in languages, tools, and expertise areas
-- **Certificates**: Industry-recognized cybersecurity certifications
-- **Education**: Academic background and professional training
-- **Blog Posts**: Sample cybersecurity articles and insights
-
-## Admin Panel
-
-Access the admin panel at `/admin` with PIN: `1234`
-
-Features:
-- Edit personal information
-- Manage projects
-- Update skills and certifications
-- Manage education history
-- Upload resume PDFs
-
-## Next Steps
-
-To further enhance the portfolio, consider:
-
-1. **Email Integration**: Connect the contact form to an email service
-2. **Analytics**: Add visitor tracking and engagement metrics
-3. **Blog CMS**: Implement a proper content management system
-4. **Security**: Add rate limiting and input validation
-5. **Performance**: Implement caching and CDN
-6. **Testing**: Add unit and integration tests
-
-## Troubleshooting
-
-### Database Connection Issues:
-- Ensure MongoDB is running (if using local installation)
-- Check the DATABASE_URL in your .env file
-- Verify network connectivity (if using MongoDB Atlas)
-
-### Build Issues:
-- Clear node_modules and reinstall: `rm -rf node_modules && npm install`
-- Check Node.js version compatibility
-- Ensure all environment variables are set
-
-### Development Server Issues:
-- Check if port 9002 is available
-- Verify all dependencies are installed
-- Check console for error messages

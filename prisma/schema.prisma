@@ -7,8 +7,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// NOTE: every field added to an existing model is optional so documents that
+// were created before it existed keep loading.
+
 model PersonalData {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
   name      String
   title     String
   bio       String
@@ -16,6 +19,8 @@ model PersonalData {
   linkedin  String
   email     String
   resumeUrl String
+  avatarUrl String?
+  location  String?
 }
 
 model Project {
@@ -34,10 +39,11 @@ model Skill {
 }
 
 model Certificate {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
   name   String
   issuer String
   year   Int
+  url    String?
 }
 
 model Education {
@@ -45,6 +51,19 @@ model Education {
   institution String
   degree      String
   duration    String
+}
+
+model Experience {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  company     String
+  role        String
+  location    String?
+  startDate   DateTime?
+  endDate     DateTime?
+  current     Boolean   @default(false)
+  description String?
+  source      String? // "manual" | "linkedin"
+  createdAt   DateTime  @default(now())
 }
 
 model CtfEvent {
@@ -76,20 +95,84 @@ model GitHubRepository {
   pushedAt        DateTime
   size            Int
   defaultBranch   String
-  visibility      String   // public, private
+  visibility      String // public, private
   archived        Boolean  @default(false)
   disabled        Boolean  @default(false)
   homepage        String?
   license         String?
-  
+  fork            Boolean?
+  readmeExcerpt   String? // first paragraph of the README, used when there is no description
+
   // Portfolio display settings
-  displayInPortfolio Boolean @default(false)
+  displayInPortfolio Boolean  @default(false)
   customTitle        String? // Override repository name for display
   customDescription  String? // Override repository description for display
   customTags         String[] // Custom tags for portfolio display
-  displayOrder       Int? // Order in portfolio (lower = first)
-  
+  displayOrder       Int? // Pin position (lower = first); null = sorted by latest activity
+
   // Metadata
-  syncedAt DateTime @default(now())
+  syncedAt    DateTime @default(now())
   lastChecked DateTime @default(now())
+}
+
+model BlogPost {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  slug        String    @unique
+  excerpt     String
+  content     String
+  tags        String[]
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ContactMessage {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String
+  subject   String
+  message   String
+  read      Boolean  @default(false)
+  ipHash    String?
+  createdAt DateTime @default(now())
+
+  @@index([ipHash, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Admin security
+// ---------------------------------------------------------------------------
+
+/// Singleton holding the hashed admin PIN once it has been changed from the
+/// dashboard. While this document does not exist the ADMIN_PIN env var is used.
+model AdminCredential {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  key       String   @unique @default("admin")
+  pinHash   String
+  updatedAt DateTime @updatedAt
+}
+
+/// Server-side admin sessions. Only a SHA-256 hash of the cookie token is stored.
+model AdminSession {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  tokenHash  String   @unique
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  lastSeenAt DateTime @default(now())
+  ip         String?
+  userAgent  String?
+}
+
+/// Every admin login attempt — used for lockouts and the login history.
+model LoginAttempt {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  ip        String
+  success   Boolean
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([ip, createdAt])
+  @@index([createdAt])
 }

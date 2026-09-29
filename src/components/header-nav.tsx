@@ -10,6 +10,14 @@ interface PersonalData {
   resumeUrl: string;
 }
 
-export function HeaderNav({ personalData }: { personalData: PersonalData | null }) {
-  return <MainNav name={personalData?.name || undefined} />;
+export function HeaderNav({
+  personalData,
+  hasExperience = false,
+  solid = false,
+}: {
+  personalData: Pick<PersonalData, 'name'> | null;
+  hasExperience?: boolean;
+  solid?: boolean;
+}) {
+  return <MainNav name={personalData?.name || undefined} hasExperience={hasExperience} solid={solid} />;
 }

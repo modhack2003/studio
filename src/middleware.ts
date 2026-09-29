@@ -30,21 +30,13 @@ function rot13(text: string): string {
 }
 
 /**
- * Check if the request has a structurally valid, unexpired admin session token.
- * Full cryptographic verification also runs on every API route handler.
+ * Routing hint only: does the request carry something that looks like an admin
+ * session cookie? The real check (database lookup) happens in the /bikram page
+ * and in every admin API route, so a forged cookie gains nothing here.
  */
 function hasValidSession(request: NextRequest): boolean {
   const token = request.cookies.get('admin_session')?.value;
-  if (!token || typeof token !== 'string') return false;
-
-  const parts = token.split(':');
-  if (parts.length !== 3) return false;
-
-  const [, timestamp, hmac] = parts;
-  if (!hmac || hmac.length !== 64) return false;
-
-  const tokenAge = Date.now() - parseInt(timestamp, 10);
-  return !(isNaN(tokenAge) || tokenAge > 6 * 60 * 60 * 1000 || tokenAge < 0);
+  return typeof token === 'string' && /^[A-Za-z0-9_-]{40,60}$/.test(token);
 }
 
 /**

@@ -6,11 +6,11 @@ export interface CtfEvent {
   name: string;
   organizer: string;
   date: string; // ISO date
-  placement?: string; // e.g., "Top 5%", "Rank #42"
-  team?: string;
-  writeupUrl?: string;
+  placement?: string | null; // e.g., "Top 5%", "Rank #42"
+  team?: string | null;
+  writeupUrl?: string | null;
   categories: string[]; // e.g., ["Web", "Crypto", "Forensics"]
-  points?: number;
+  points?: number | null;
 }
 
 function fmt(iso: string) {

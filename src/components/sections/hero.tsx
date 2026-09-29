@@ -18,6 +18,7 @@ interface PersonalData {
   name: string;
   title: string;
   bio?: string;
+  location?: string | null;
 }
 
 const TAGLINE = ['CYBERSEC.', 'PENTEST.', 'DEFEND.'];
@@ -56,6 +57,7 @@ export function HeroSection({ personalData }: { personalData: PersonalData | nul
   const name = personalData?.name || 'Bikram Dey';
   const title = personalData?.title || 'Cybersecurity Analyst & Penetration Tester';
   const bio = personalData?.bio;
+  const location = personalData?.location?.trim();
   const [first, last] = splitName(name.toUpperCase());
   const letters = (first + last).length || 1;
   // fit the name to the viewport width regardless of its length
@@ -75,9 +77,9 @@ export function HeroSection({ personalData }: { personalData: PersonalData | nul
       <div className="relative mx-auto max-w-[1440px] px-3 sm:px-5">
         {/* coordinates row */}
         <div className="flex items-center justify-between border-b border-ink/60 py-3 monofont text-[10px] uppercase tracking-[0.3em]">
-          <span>10.85° N / 78.69° E</span>
+          <span>{location ? `LOC // ${location}` : '10.85° N / 78.69° E'}</span>
           <span className="hidden sm:inline">{'// operator profile · v2.0.0-rc.1'}</span>
-          <span>India</span>
+          <span>{location ? 'ONLINE' : 'India'}</span>
         </div>
 
         {/* giant name */}

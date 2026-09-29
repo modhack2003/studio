@@ -1,74 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  verifyPin,
-  generateSessionToken,
-  checkLoginRateLimit,
-  recordFailedLogin,
-  clearLoginAttempts,
-} from '@/lib/auth';
+  AuthConfigError,
+  MAX_FAILED_ATTEMPTS,
+  SESSION_COOKIE,
+  createSession,
+  getLoginThrottle,
+  recordLoginAttempt,
+  requestMeta,
+  sessionCookieOptions,
+  verifyAdminPin,
+} from '@/lib/admin-auth';
+import { readJson } from '@/lib/api';
+
+export const dynamic = 'force-dynamic';
+
+function lockedResponse(retryAfterMs: number) {
+  const retryAfter = Math.max(1, Math.ceil(retryAfterMs / 1000));
+  return NextResponse.json(
+    {
+      error: `Too many failed attempts. Try again in ${Math.ceil(retryAfter / 60)} min.`,
+      retryAfter,
+    },
+    { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+  );
+}
 
 export async function POST(request: NextRequest) {
+  const { ip, userAgent } = requestMeta(request);
+
+  const body = (await readJson(request)) as { pin?: unknown } | undefined;
+  const pin = typeof body?.pin === 'string' ? body.pin.trim() : '';
+  if (!pin || pin.length > 64) {
+    return NextResponse.json({ error: 'PIN is required.' }, { status: 400 });
+  }
+
   try {
-    // Rate limiting — prevent brute force on PIN
-    const clientIP = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const rateCheck = checkLoginRateLimit(clientIP);
+    const throttle = await getLoginThrottle(ip);
+    if (!throttle.allowed) return lockedResponse(throttle.retryAfterMs);
 
-    if (!rateCheck.allowed) {
-      const retryAfter = Math.ceil((rateCheck.retryAfterMs || 0) / 1000);
+    // constant-ish response time regardless of outcome
+    const started = Date.now();
+    const ok = await verifyAdminPin(pin);
+    const elapsed = Date.now() - started;
+    if (elapsed < 350) await new Promise((r) => setTimeout(r, 350 - elapsed));
+
+    await recordLoginAttempt(ip, ok, userAgent);
+
+    if (!ok) {
+      const remaining = Math.max(0, throttle.remaining - 1);
+      if (remaining === 0) {
+        const after = await getLoginThrottle(ip);
+        return lockedResponse(after.retryAfterMs || 15 * 60 * 1000);
+      }
       return NextResponse.json(
-        { error: 'Too many login attempts. Please try again later.' },
         {
-          status: 429,
-          headers: { 'Retry-After': retryAfter.toString() },
-        }
-      );
-    }
-
-    const { pin } = await request.json();
-    const correct = process.env.ADMIN_PIN;
-
-    if (!correct) {
-      return NextResponse.json(
-        { error: 'Admin PIN not configured' },
-        { status: 500 }
-      );
-    }
-
-    if (!pin || typeof pin !== 'string') {
-      return NextResponse.json(
-        { error: 'PIN is required' },
-        { status: 400 }
-      );
-    }
-
-    // Timing-safe comparison to prevent timing attacks
-    if (!verifyPin(pin, correct)) {
-      recordFailedLogin(clientIP);
-      return NextResponse.json(
-        { error: 'Unauthorized' },
+          error: `Wrong PIN. ${remaining} attempt${remaining === 1 ? '' : 's'} left before a 15 min lockout.`,
+          remaining,
+          maxAttempts: MAX_FAILED_ATTEMPTS,
+        },
         { status: 401 }
       );
     }
 
-    // Success — clear rate limit and issue cryptographic session token
-    clearLoginAttempts(clientIP);
-    const sessionToken = generateSessionToken();
-
-    const res = NextResponse.json({ success: true }, { status: 200 });
-    res.cookies.set('admin_session', sessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 60 * 60 * 6, // 6 hours
-    });
+    const { token, expiresAt } = await createSession(ip, userAgent);
+    const res = NextResponse.json({ success: true, expiresAt: expiresAt.toISOString() });
+    res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(expiresAt));
     return res;
-  } catch {
-    return NextResponse.json(
-      { error: 'Bad Request' },
-      { status: 400 }
-    );
+  } catch (error) {
+    if (error instanceof AuthConfigError) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    console.error('Login failed:', error);
+    return NextResponse.json({ error: 'Login is temporarily unavailable (database error).' }, { status: 503 });
   }
 }
-
-

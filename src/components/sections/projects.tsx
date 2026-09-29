@@ -10,7 +10,7 @@ interface Project {
   title: string;
   description: string;
   tags: string[];
-  link?: string;
+  link?: string | null;
 }
 
 interface GitHubRepository {
@@ -28,6 +28,7 @@ interface GitHubRepository {
   customDescription: string | null;
   customTags: string[];
   displayOrder: number | null;
+  readmeExcerpt?: string | null;
 }
 
 type Entry = {
@@ -45,6 +46,8 @@ type Entry = {
   meta?: string;
 };
 
+const INITIAL_REPOS = 5;
+
 function toEntries(projects: Project[], repos: GitHubRepository[]): Entry[] {
   const a: Entry[] = projects.map((p) => ({
     key: `db-${p.title}`,
@@ -52,14 +55,14 @@ function toEntries(projects: Project[], repos: GitHubRepository[]): Entry[] {
     title: p.title,
     description: p.description,
     tags: p.tags,
-    primaryHref: p.link,
+    primaryHref: p.link ?? undefined,
     primaryLabel: 'View Project',
   }));
   const b: Entry[] = repos.map((repo) => ({
     key: `gh-${repo.id}`,
     kind: 'repo',
     title: repo.customTitle || repo.name,
-    description: repo.customDescription || repo.description || 'No description available',
+    description: repo.customDescription || repo.description || repo.readmeExcerpt || 'No description available',
     tags: repo.customTags && repo.customTags.length > 0 ? repo.customTags : repo.topics,
     language: repo.language,
     stars: repo.stargazersCount,
@@ -100,7 +103,16 @@ function Cube({ label }: { label: string }) {
 }
 
 export function ProjectsSection({ projects, githubRepos }: { projects: Project[]; githubRepos: GitHubRepository[] }) {
-  const entries = useMemo(() => toEntries(projects, githubRepos), [projects, githubRepos]);
+  const all = useMemo(() => toEntries(projects, githubRepos), [projects, githubRepos]);
+  const [showAll, setShowAll] = useState(false);
+  const repoTotal = githubRepos.length;
+  const hiddenRepos = Math.max(0, repoTotal - INITIAL_REPOS);
+  // hand-picked projects always show; GitHub repos start with the 5 latest (pinned first)
+  const entries = useMemo(() => {
+    if (showAll) return all;
+    let repos = 0;
+    return all.filter((e) => e.kind === 'project' || repos++ < INITIAL_REPOS);
+  }, [all, showAll]);
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [active, setActive] = useState(0);
   const current = entries[active];
@@ -185,7 +197,7 @@ export function ProjectsSection({ projects, githubRepos }: { projects: Project[]
       <div>
         <div className="mb-6 flex items-center justify-between">
           <span className="monofont text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-            payload_collection [{entries.length}]
+            payload_collection [{entries.length}/{all.length}]
           </span>
           <div className="flex border border-signal/40">
             {(['grid', 'list'] as const).map((v) => (
@@ -281,6 +293,25 @@ export function ProjectsSection({ projects, githubRepos }: { projects: Project[]
               </li>
             ))}
           </ul>
+        )}
+
+        {hiddenRepos > 0 && (
+          <div className="mt-8 flex flex-col items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAll((v) => !v);
+                if (showAll && active >= entries.length - hiddenRepos) setActive(0);
+              }}
+              aria-expanded={showAll}
+              className="bracket bg-signal/10 px-6 py-3 monofont text-xs uppercase tracking-[0.2em] text-signal transition-colors hover:bg-signal hover:text-ink"
+            >
+              {showAll ? 'Show latest only' : `Show all ${repoTotal} repositories (+${hiddenRepos})`}
+            </button>
+            <span className="monofont text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+              {showAll ? `${repoTotal} repos from github` : `latest ${INITIAL_REPOS} of ${repoTotal} repos`}
+            </span>
+          </div>
         )}
       </div>
     </section>
