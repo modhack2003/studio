@@ -75,29 +75,112 @@ function toEntries(projects: Project[], repos: GitHubRepository[]): Entry[] {
   return [...a, ...b];
 }
 
-function Cube({ label }: { label: string }) {
-  const faces = [
-    'rotateY(0deg)',
-    'rotateY(90deg)',
-    'rotateY(180deg)',
-    'rotateY(-90deg)',
-    'rotateX(90deg)',
-    'rotateX(-90deg)',
-  ];
+// A colour per language so the preview panel reads like a GitHub repo card.
+const LANGUAGE_COLORS: Record<string, string> = {
+  TypeScript: '#3178C6',
+  JavaScript: '#F1E05A',
+  Python: '#3572A5',
+  HTML: '#E34C26',
+  CSS: '#563D7C',
+  EJS: '#A91E50',
+  Shell: '#89E051',
+  C: '#555555',
+  'C++': '#F34B7D',
+  Java: '#B07219',
+  Go: '#00ADD8',
+  Rust: '#DEA584',
+  Solidity: '#AA6746',
+  Dart: '#00B4AB',
+  Vue: '#41B883',
+  PHP: '#4F5D95',
+};
+const langColor = (lang?: string | null) => (lang && LANGUAGE_COLORS[lang]) || 'hsl(var(--cyan))';
+
+// Deterministic pseudo-random from a string, so a repo's "commit graph" is stable per repo.
+function seeded(seed: string) {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return () => {
+    h += 0x6d2b79f5;
+    let t = Math.imul(h ^ (h >>> 15), 1 | h);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Repo preview graphic — a GitHub-flavoured panel instead of an abstract cube.
+ * Shows the language dot + name, a contribution-style activity grid, and the
+ * repo's stars/forks. For hand-picked field projects it falls back to a compact
+ * "field project" tag block.
+ */
+function RepoGraphic({ entry, index, total }: { entry?: Entry; index: number; total: number }) {
+  const cells = useMemo(() => {
+    const rand = seeded(entry?.key ?? `slot-${index}`);
+    const weight = entry?.kind === 'repo' ? 0.55 : 0.35;
+    return Array.from({ length: 7 * 12 }, () => {
+      const r = rand();
+      return r > 1 - weight ? Math.min(4, 1 + Math.floor(rand() * 4)) : 0;
+    });
+  }, [entry?.key, entry?.kind, index]);
+
+  const color = langColor(entry?.language);
+  const isRepo = entry?.kind === 'repo';
+
   return (
-    <div className="perspective flex h-40 items-center justify-center" aria-hidden>
-      <div className="preserve-3d relative h-24 w-24 animate-[cube_14s_linear_infinite]">
-        {faces.map((f, i) => (
-          <div
-            key={f}
-            className="absolute inset-0 flex items-center justify-center border border-signal bg-signal/10 font-display text-2xl font-bold text-signal"
-            style={{ transform: `${f} translateZ(48px)` }}
-          >
-            {i === 0 ? label : ''}
-          </div>
+    <div className="relative flex h-44 flex-col justify-between overflow-hidden border-b border-signal/40 bg-ink/40 p-4" aria-hidden>
+      <div aria-hidden className="grid-cross pointer-events-none absolute inset-0 opacity-30" />
+
+      {/* header: language dot + name + slot */}
+      <div className="relative flex items-center justify-between">
+        <div className="flex items-center gap-2 monofont text-[10px] uppercase tracking-[0.25em] text-bone/80">
+          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+          {entry?.language || (isRepo ? 'repo' : 'field project')}
+        </div>
+        <span className="monofont text-[10px] uppercase tracking-[0.3em] text-signal">
+          {String(index + 1).padStart(2, '0')}/{String(total).padStart(2, '0')}
+        </span>
+      </div>
+
+      {/* contribution-style activity grid */}
+      <div className="relative grid grid-cols-12 gap-[3px]">
+        {cells.map((level, i) => (
+          <span
+            key={i}
+            className="aspect-square w-full rounded-[1px] transition-colors duration-500"
+            style={{
+              backgroundColor: level === 0 ? 'hsl(var(--signal) / 0.1)' : color,
+              opacity: level === 0 ? 1 : 0.35 + level * 0.16,
+              transitionDelay: `${(i % 12) * 12}ms`,
+            }}
+          />
         ))}
       </div>
-      <style>{`@keyframes cube{from{transform:rotateX(-20deg) rotateY(0)}to{transform:rotateX(-20deg) rotateY(360deg)}}`}</style>
+
+      {/* footer: stars / forks for repos, tag count for field projects */}
+      <div className="relative flex items-center justify-between monofont text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+        {isRepo ? (
+          <>
+            <span className="inline-flex items-center gap-1 text-signal">
+              <Star className="h-3 w-3" />
+              {entry?.stars ?? 0}
+            </span>
+            <span className="inline-flex items-center gap-1 text-signal">
+              <GitFork className="h-3 w-3" />
+              {entry?.forks ?? 0}
+            </span>
+            <span className="text-cyan">{'// commit_map'}</span>
+          </>
+        ) : (
+          <>
+            <span className="text-signal">{'// field_project'}</span>
+            <span className="text-cyan">{entry?.tags.length ?? 0} tags</span>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -136,7 +219,17 @@ export function ProjectsSection({ projects, githubRepos }: { projects: Project[]
               {String(active + 1).padStart(2, '0')}/{String(entries.length).padStart(2, '0')}
             </span>
           </div>
-          <Cube label={String(active + 1).padStart(2, '0')} />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={current?.key ?? active}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              <RepoGraphic entry={current} index={active} total={entries.length} />
+            </motion.div>
+          </AnimatePresence>
           <AnimatePresence mode="wait">
             {current && (
               <motion.div
@@ -145,7 +238,7 @@ export function ProjectsSection({ projects, githubRepos }: { projects: Project[]
                 animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                 exit={{ opacity: 0, y: -12, filter: 'blur(4px)' }}
                 transition={{ duration: 0.3 }}
-                className="space-y-4 border-t border-signal/40 p-5"
+                className="space-y-4 p-5"
               >
                 <p className="monofont text-[10px] uppercase tracking-[0.3em] text-cyan">
                   {current.kind === 'repo' ? 'git_repository' : 'field_project'}
