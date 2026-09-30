@@ -90,8 +90,10 @@ export const KIND_PRIORITY: readonly ObjectKind[] = Object.freeze([
   'crypto_coin',
   'travel_globe',
   'seat_matrix',
-  'book_study',
+  // Security outranks study: an entry tagged both `RECON` and `NOTES` is security work with notes,
+  // not coursework, so the padlock is the truer read of a tie.
   'security_lock',
+  'book_study',
   'ai_core',
   'analytics_bars',
   'database_stack',

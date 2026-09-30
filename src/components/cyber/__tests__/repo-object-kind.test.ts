@@ -98,6 +98,11 @@ describe('classifyRepoObject — precedence', () => {
     expect(classifyRepoObject({ name: 'ezyMetrics-backend' })).toBe('analytics_bars');
   });
 
+  it('resolves an equal-score security/study tie towards security', () => {
+    // a hand-picked field project tagged both ways is recon work with notes, not coursework
+    expect(classifyRepoObject({ customTags: ['RECON', 'NOTES'] })).toBe('security_lock');
+  });
+
   it('honours a curator override in customTags only', () => {
     expect(classifyRepoObject({ customTags: ['object:crypto_coin'], name: 'cricket-scores' })).toBe('crypto_coin');
     expect(classifyRepoObject({ customTags: ['esp32_board'] })).toBe('esp32_board');

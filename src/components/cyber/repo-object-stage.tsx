@@ -42,6 +42,8 @@ interface StageState {
   time: number;
   visible: boolean;
   crashed: boolean;
+  /** true between `webglcontextlost` and `webglcontextrestored`; rendering is a silent no-op then */
+  lost: boolean;
   aspect: number;
 }
 
@@ -125,6 +127,7 @@ export function RepoObjectStage({ kind, accent, className, onStatus }: RepoObjec
       time: 0,
       visible: true,
       crashed: false,
+      lost: false,
       aspect: 1,
     };
     stateRef.current = state;
@@ -166,14 +169,14 @@ export function RepoObjectStage({ kind, accent, className, onStatus }: RepoObjec
     };
 
     const start = () => {
-      if (running || state.crashed || !state.built) return;
+      if (running || state.crashed || state.lost || !state.built) return;
       running = true;
       state.clock.getDelta(); // drop the accumulated gap so dt cannot spike on resume
       state.raf = requestAnimationFrame(tick);
     };
 
     const renderOnce = () => {
-      if (!state.built || state.crashed) return;
+      if (!state.built || state.crashed || state.lost) return;
       try {
         state.built.update(state.time, 0, !running);
         state.renderer.render(state.scene, state.camera);
@@ -186,6 +189,9 @@ export function RepoObjectStage({ kind, accent, className, onStatus }: RepoObjec
     const resize = () => {
       const w = mount.clientWidth || 1;
       const h = mount.clientHeight || 1;
+      // Re-read the DPR here too: dragging the window to a display of a different density fires a
+      // resize but not an epoch bump, and a ratio sampled only at construction would stay stale.
+      state.renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_DPR));
       state.renderer.setSize(w, h, false);
       state.aspect = w / h;
       if (state.built) frameObject(state.built, state.camera, state.aspect);
@@ -198,8 +204,13 @@ export function RepoObjectStage({ kind, accent, className, onStatus }: RepoObjec
 
     const swap = (nextKind: ObjectKind, nextAccent: string) => {
       if (state.crashed) return;
+      // Recorded before the lost-context guard, so `onRestored` rebuilds whatever the user selected
+      // while the context was down rather than the repo that was showing when it died.
       state.kind = nextKind;
       state.accent = nextAccent;
+      // While the context is lost `render()` silently no-ops, so reporting 'live' here would fade the
+      // activity grid out over an empty slot. Stay in the fallback until the context comes back.
+      if (state.lost) return;
       drop();
       const result = buildObject(nextKind, createBuildContext(nextAccent));
       if (!result) {
@@ -239,12 +250,14 @@ export function RepoObjectStage({ kind, accent, className, onStatus }: RepoObjec
     document.addEventListener('visibilitychange', sync);
 
     const onLost = (event: Event) => {
-      event.preventDefault();
+      event.preventDefault(); // asks for restoration; not guaranteed, hence the `lost` flag
       console.warn(`repo 3D object lost its WebGL context (kind: ${state.kind ?? 'none'})`);
+      state.lost = true;
       stop();
       status('fallback');
     };
     const onRestored = () => {
+      state.lost = false;
       state.crashed = false;
       if (state.kind) swap(state.kind, state.accent);
     };
@@ -262,6 +275,10 @@ export function RepoObjectStage({ kind, accent, className, onStatus }: RepoObjec
       canvas.removeEventListener('webglcontextlost', onLost);
       canvas.removeEventListener('webglcontextrestored', onRestored);
       drop();
+      // Hand the context back immediately instead of waiting on GC, so a remount can never be the
+      // thing that pushes the page past the browser's context cap. Safe after the listeners above
+      // are removed: the synthetic loss event this fires has nobody left to handle it.
+      state.renderer.forceContextLoss();
       state.renderer.dispose();
       canvas.remove();
       apiRef.current = null;

@@ -71,7 +71,8 @@ export const OBJECT_BUILDERS: Record<ObjectKind, ObjectBuilder> = {
 
 /**
  * Builds a kind, falling back to the generic prism if a builder throws (a real code bug, so it is
- * logged loudly) and disposing whatever the failed builder managed to allocate.
+ * logged loudly). A throwing builder loses the reference to whatever it had allocated, so that
+ * partial subtree is not disposed — it is ordinary JS garbage, never uploaded to the GPU.
  */
 export function buildObject(kind: ObjectKind, ctx: BuildContext): { built: BuiltObject; kind: ObjectKind } | null {
   try {
