@@ -16,9 +16,22 @@ interface Profile {
   resumeUrl: string;
   avatarUrl: string;
   location: string;
+  /** one URL per line (stored as a list) */
+  bountyProfiles: string;
 }
 
-const EMPTY: Profile = { name: '', title: '', bio: '', github: '', linkedin: '', email: '', resumeUrl: '', avatarUrl: '', location: '' };
+const EMPTY: Profile = {
+  name: '',
+  title: '',
+  bio: '',
+  github: '',
+  linkedin: '',
+  email: '',
+  resumeUrl: '',
+  avatarUrl: '',
+  location: '',
+  bountyProfiles: '',
+};
 
 export function ProfilePanel() {
   const { toast } = useToast();
@@ -30,11 +43,18 @@ export function ProfilePanel() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    api<Partial<Record<keyof Profile, string | null>> | null>('/api/personal-data')
+    api<Record<string, unknown> | null>('/api/personal-data')
       .then((data) => {
         if (data) {
           setExists(true);
-          setProfile(Object.fromEntries(Object.keys(EMPTY).map((k) => [k, data[k as keyof Profile] ?? ''])) as unknown as Profile);
+          setProfile(
+            Object.fromEntries(
+              Object.keys(EMPTY).map((k) => {
+                const v = data[k];
+                return [k, Array.isArray(v) ? v.join('\n') : typeof v === 'string' ? v : ''];
+              })
+            ) as unknown as Profile
+          );
         }
       })
       .catch((e) => toast({ title: 'Could not load profile', description: errorMessage(e), variant: 'destructive' }))
@@ -113,6 +133,20 @@ export function ProfilePanel() {
           </Field>
           <Field label="Resume URL" htmlFor="p-resume" hint="Upload a PDF below or paste any public link (e.g. Google Drive).">
             <TextInput id="p-resume" value={profile.resumeUrl} onChange={set('resumeUrl')} />
+          </Field>
+          <Field
+            label="Bug bounty profiles"
+            htmlFor="p-bounty"
+            className="md:col-span-2"
+            hint="One link per line — HackerOne, Bugcrowd, Intigriti, YesWeHack… Shown in the Hall of Fame and invite sections."
+          >
+            <TextArea
+              id="p-bounty"
+              rows={3}
+              value={profile.bountyProfiles}
+              onChange={set('bountyProfiles')}
+              placeholder={'https://hackerone.com/your-handle\nhttps://bugcrowd.com/your-handle'}
+            />
           </Field>
           <button type="submit" className="hidden" />
         </form>

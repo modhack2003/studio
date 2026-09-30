@@ -12,6 +12,8 @@ const NAV_ITEMS = [
   { name: 'Projects', href: '#projects', jp: '作品' },
   { name: 'CTF', href: '#ctf', jp: '旗' },
   { name: 'Skills', href: '#skills', jp: '武器' },
+  { name: 'VAPT', href: '#vapt', jp: '侵入' },
+  { name: 'Bounty', href: '#bounty', jp: '賞金' },
   { name: 'Blog', href: '#blog', jp: '記録' },
   { name: 'Contact', href: '#contact', jp: '通信' },
   { name: 'Admin', href: '/b1kr4m-5h4d0w', jp: '管理' },
@@ -37,6 +39,8 @@ export function MainNav({
   const navItems = NAV_ITEMS.filter((i) => !hidden.includes(i.href)).map((i) =>
     solid && i.href.startsWith('#') ? { ...i, href: `/${i.href}` } : i
   );
+  // with many sections the desktop nav needs more room: switch breakpoints up one step
+  const dense = navItems.filter((i) => i.href.includes('#')).length > 7;
   const [scrolled, setIsScrolled] = useState(false);
   const isScrolled = solid || scrolled;
   const [open, setOpen] = useState(false);
@@ -78,7 +82,8 @@ export function MainNav({
         {/* coordinates bar */}
         <div
           className={cn(
-            'hidden flex-1 items-center justify-between border-b px-6 monofont text-[10px] uppercase tracking-[0.3em] xl:flex',
+            'hidden flex-1 items-center justify-between border-b px-6 monofont text-[10px] uppercase tracking-[0.3em]',
+            dense ? '2xl:flex' : 'xl:flex',
             isScrolled ? 'border-signal/40 text-bone/70' : 'border-ink/60 text-ink'
           )}
         >
@@ -89,7 +94,8 @@ export function MainNav({
         {/* desktop nav */}
         <nav
           className={cn(
-            'ml-auto hidden items-center gap-0.5 border-b pl-4 lg:flex',
+            'ml-auto hidden items-center gap-0.5 border-b pl-4',
+            dense ? 'xl:flex' : 'lg:flex',
             isScrolled ? 'border-signal/40' : 'border-ink/60'
           )}
         >
@@ -117,7 +123,7 @@ export function MainNav({
         </nav>
 
         {/* mobile */}
-        <div className="ml-auto flex items-center lg:hidden">
+        <div className={cn('ml-auto flex items-center', dense ? 'xl:hidden' : 'lg:hidden')}>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <button
@@ -136,7 +142,7 @@ export function MainNav({
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <nav className="flex flex-col">
+              <nav className="flex max-h-[calc(100dvh-4rem)] flex-col overflow-y-auto">
                 {navItems.map((item, i) => (
                   <Link
                     key={item.href}

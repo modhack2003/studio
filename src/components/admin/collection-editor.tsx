@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { api, errorMessage } from './api-client';
 import { Btn, EmptyState, Field, Panel, TextArea, TextInput, Toggle } from './ui';
 
-export type FieldType = 'text' | 'textarea' | 'number' | 'tags' | 'date' | 'month' | 'url' | 'checkbox';
+export type FieldType = 'text' | 'textarea' | 'number' | 'tags' | 'date' | 'month' | 'url' | 'checkbox' | 'select';
 
 export interface FieldDef {
   name: string;
@@ -17,6 +17,10 @@ export interface FieldDef {
   hint?: string;
   wide?: boolean;
   rows?: number;
+  /** choices for type "select" (an empty "—" option is added unless the field is required) */
+  options?: readonly { value: string; label: string }[];
+  /** initial value for new entries */
+  defaultValue?: string | boolean;
   /** hide this field when the predicate is true (e.g. end date when "current") */
   hiddenWhen?: (values: FormValues) => boolean;
 }
@@ -61,7 +65,7 @@ function toPayload(fields: FieldDef[], values: FormValues) {
 }
 
 function emptyValues(fields: FieldDef[]): FormValues {
-  return Object.fromEntries(fields.map((f) => [f.name, f.type === 'checkbox' ? false : ''])) as FormValues;
+  return Object.fromEntries(fields.map((f) => [f.name, f.defaultValue ?? (f.type === 'checkbox' ? false : '')])) as FormValues;
 }
 
 export function CollectionEditor({
@@ -184,6 +188,22 @@ export function CollectionEditor({
                   value={String(val ?? '')}
                   onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
                 />
+              ) : f.type === 'select' ? (
+                <select
+                  id={id}
+                  name={f.name}
+                  required={f.required}
+                  value={String(val ?? '')}
+                  onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
+                  className="w-full border border-signal/30 bg-ink px-3 py-2 text-sm text-bone outline-none transition-colors focus:border-signal"
+                >
+                  {!f.required && <option value="">—</option>}
+                  {f.options?.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
               ) : f.type === 'checkbox' ? (
                 <div className="flex h-10 items-center">
                   <Toggle label={f.label} checked={val === true} onChange={(c) => setValues((v) => ({ ...v, [f.name]: c }))} />

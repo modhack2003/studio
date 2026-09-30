@@ -26,9 +26,13 @@ export async function readJson(request: NextRequest): Promise<unknown> {
   }
 }
 
+export function notFound(what: string) {
+  return jsonError(`${what} not found`, 404);
+}
+
 export function handleError(error: unknown, what: string) {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    if (error.code === 'P2025') return jsonError(`${what} not found`, 404);
+    if (error.code === 'P2025') return notFound(what);
     if (error.code === 'P2002') return jsonError(`A ${what.toLowerCase()} with that value already exists`, 409);
     if (error.code === 'P2023') return jsonError(`Invalid ${what.toLowerCase()} id`, 400);
   }
@@ -39,9 +43,10 @@ export function handleError(error: unknown, what: string) {
 /** Minimal shape of a Prisma model delegate used by the generic handlers. */
 type Delegate = {
   findMany(args?: object): Promise<unknown[]>;
+  findUnique(args: { where: { id: string }; select: { id: true } }): Promise<unknown>;
   create(args: { data: object }): Promise<unknown>;
   update(args: { where: { id: string }; data: object }): Promise<unknown>;
-  delete(args: { where: { id: string } }): Promise<unknown>;
+  deleteMany(args: { where: { id: string } }): Promise<{ count: number }>;
 };
 
 type ParamsCtx = { params: Promise<{ id: string }> };
@@ -102,6 +107,8 @@ export function collectionHandlers(opts: CollectionOptions) {
     const parsed = opts.schema.safeParse((await readJson(request)) ?? {});
     if (!parsed.success) return jsonError(zodMessage(parsed.error), 400);
     try {
+      // Check first: an update on a missing id makes Prisma log a P2025 error for an ordinary 404.
+      if (!(await opts.delegate().findUnique({ where: { id }, select: { id: true } }))) return notFound(opts.label);
       let data = parsed.data as Record<string, unknown>;
       if (opts.prepare) data = await opts.prepare(data, 'update', id);
       const updated = await opts.delegate().update({ where: { id }, data });
@@ -118,7 +125,9 @@ export function collectionHandlers(opts: CollectionOptions) {
     const { id } = await ctx.params;
     if (!OBJECT_ID.test(id)) return jsonError(`Invalid ${opts.label.toLowerCase()} id`, 400);
     try {
-      await opts.delegate().delete({ where: { id } });
+      // deleteMany reports a miss as count 0 instead of throwing (and logging) P2025
+      const { count } = await opts.delegate().deleteMany({ where: { id } });
+      if (count === 0) return notFound(opts.label);
       revalidatePublic();
       return NextResponse.json({ success: true });
     } catch (error) {

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { sortRepos } from '@/lib/repo-order';
+import { computeBountyStats, toPublicFinding } from '@/lib/bounty';
 
 /** During `next build` the database may be unreachable — render empty and let ISR refresh it. */
 export const isBuildPhase = () => process.env.NEXT_PHASE === 'phase-production-build';
@@ -16,7 +17,7 @@ export type Jsonify<T> = T extends Date
 const plain = <T,>(v: T): Jsonify<T> => JSON.parse(JSON.stringify(v));
 
 async function load() {
-  const [personalData, projects, githubRepos, skills, certificates, education, ctfEvents, experience, posts, postCount] =
+  const [personalData, projects, githubRepos, skills, certificates, education, ctfEvents, experience, posts, postCount, findings] =
     await Promise.all([
       prisma.personalData.findFirst({
         select: {
@@ -30,6 +31,7 @@ async function load() {
           resumeUrl: true,
           avatarUrl: true,
           location: true,
+          bountyProfiles: true,
         },
       }),
       prisma.project.findMany({ select: { id: true, title: true, description: true, tags: true, link: true } }),
@@ -80,6 +82,7 @@ async function load() {
         select: { id: true, title: true, slug: true, excerpt: true, content: true, tags: true, publishedAt: true },
       }),
       prisma.blogPost.count({ where: { published: true } }),
+      prisma.bountyFinding.findMany({ orderBy: [{ date: 'desc' }, { createdAt: 'desc' }] }),
     ]);
 
   const sortedExperience = [...experience].sort(
@@ -89,7 +92,7 @@ async function load() {
   );
 
   return plain({
-    personalData,
+    personalData: personalData ? { ...personalData, bountyProfiles: personalData.bountyProfiles ?? [] } : null,
     projects,
     githubRepos: sortRepos(githubRepos),
     skills,
@@ -99,6 +102,8 @@ async function load() {
     experience: sortedExperience,
     posts,
     postCount,
+    // Only the redacted public shape leaves the server — private program names/links are dropped here.
+    bounty: { findings: findings.map(toPublicFinding), stats: computeBountyStats(findings) },
   });
 }
 
@@ -115,6 +120,7 @@ const EMPTY: PortfolioData = {
   experience: [],
   posts: [],
   postCount: 0,
+  bounty: { findings: [], stats: computeBountyStats([]) },
 };
 
 export async function getPortfolioData(): Promise<PortfolioData> {

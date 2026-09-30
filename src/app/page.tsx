@@ -7,6 +7,9 @@ import { BlogSection } from '@/components/sections/blog';
 import { ContactSection } from '@/components/sections/contact';
 import { CtfSection } from '@/components/sections/ctf';
 import { MaskedGenerator } from '@/components/sections/masked-generator';
+import { VaptSection } from '@/components/sections/vapt';
+import { BountySection } from '@/components/sections/bounty';
+import { BountyInviteSection } from '@/components/sections/bounty-invite';
 import { HeaderNav } from '@/components/header-nav';
 import { SectionHeader } from '@/components/cyber/primitives';
 import { ScrollCircle } from '@/components/cyber/scroll-circle';
@@ -16,12 +19,14 @@ import { getPortfolioData } from '@/lib/portfolio-data';
 export const revalidate = 60;
 
 export default async function Home() {
-  const { personalData, projects, githubRepos, skills, certificates, education, ctfEvents, experience, posts, postCount } =
+  const { personalData, projects, githubRepos, skills, certificates, education, ctfEvents, experience, posts, postCount, bounty } =
     await getPortfolioData();
 
   const hasExperience = experience.length > 0;
   const hasCtf = ctfEvents.length > 0;
   const hasSkills = !!skills && skills.languages.length + skills.tools.length + skills.areas.length > 0;
+  const hasBounty = bounty.findings.length > 0;
+  const bountyProfiles = personalData?.bountyProfiles ?? [];
   const hidden = [!hasExperience && '#experience', !hasCtf && '#ctf', !hasSkills && '#skills'].filter(Boolean) as string[];
 
   let n = 0;
@@ -32,6 +37,9 @@ export default async function Home() {
   const projIdx = idx();
   const ctfIdx = hasCtf ? idx() : '';
   const skillIdx = hasSkills ? idx() : '';
+  const vaptIdx = idx();
+  const bountyIdx = hasBounty ? idx() : '';
+  const inviteIdx = idx();
   const blogIdx = idx();
   const contactIdx = idx();
 
@@ -76,6 +84,24 @@ export default async function Home() {
               <SkillsSection skills={skills} />
             </div>
             )}
+
+            <div className="space-y-14">
+              <SectionHeader id="vapt" index={vaptIdx} jp="侵入試験" eyebrow={`Section ${vaptIdx} / Offensive security`} title="VAPT Services" subtitle="Vulnerability assessment & penetration testing for web apps, APIs, mobile apps, networks and cloud. Tell me what needs testing and I&apos;ll come back with a scoped proposal." />
+              <VaptSection email={personalData?.email} />
+            </div>
+
+            {hasBounty && (
+              <div className="space-y-14">
+                <SectionHeader id="bounty" index={bountyIdx} jp="賞金稼ぎ" eyebrow={`Section ${bountyIdx} / Bug bounty`} title="Hall of Fame" subtitle="Security issues I have found and responsibly disclosed to vendor security teams." />
+                <BountySection findings={bounty.findings} stats={bounty.stats} profiles={bountyProfiles} />
+              </div>
+            )}
+
+            {/* when there are no findings yet the nav's "Bounty" link lands on the invite section */}
+            <div id={hasBounty ? undefined : 'bounty'} className="scroll-mt-24 space-y-14">
+              <SectionHeader id="invite" index={inviteIdx} jp="招待状" eyebrow={`Section ${inviteIdx} / For security teams`} title="Program Invite" subtitle="Run a bug bounty program or vulnerability disclosure policy? Invite me to your private program, VDP or live hacking event." />
+              <BountyInviteSection stats={hasBounty ? bounty.stats : null} profiles={bountyProfiles} />
+            </div>
 
             <div className="space-y-14">
               <SectionHeader id="blog" index={blogIdx} jp="記録" eyebrow={`Section ${blogIdx} / Transmissions`} title="Security Insights" subtitle="My thoughts on cybersecurity trends, methodologies, and best practices." />

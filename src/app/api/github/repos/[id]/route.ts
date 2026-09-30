@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminSession } from '@/lib/admin-auth';
-import { OBJECT_ID, handleError, jsonError, readJson, revalidatePublic } from '@/lib/api';
+import { OBJECT_ID, handleError, jsonError, notFound, readJson, revalidatePublic } from '@/lib/api';
 import { repoSettingsSchema, zodMessage } from '@/lib/validators';
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -18,6 +18,7 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
 
   const data = Object.fromEntries(Object.entries(parsed.data).filter(([, v]) => v !== undefined));
   try {
+    if (!(await prisma.gitHubRepository.findUnique({ where: { id }, select: { id: true } }))) return notFound('Repository');
     const repository = await prisma.gitHubRepository.update({ where: { id }, data });
     revalidatePublic();
     return NextResponse.json({ success: true, repository });
@@ -33,7 +34,8 @@ export async function DELETE(request: NextRequest, { params }: Ctx) {
   const { id } = await params;
   if (!OBJECT_ID.test(id)) return jsonError('Invalid repository id', 400);
   try {
-    await prisma.gitHubRepository.delete({ where: { id } });
+    const { count } = await prisma.gitHubRepository.deleteMany({ where: { id } });
+    if (count === 0) return notFound('Repository');
     revalidatePublic();
     return NextResponse.json({ success: true });
   } catch (error) {

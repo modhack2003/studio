@@ -21,6 +21,8 @@ model PersonalData {
   resumeUrl String
   avatarUrl String?
   location  String?
+  /// HackerOne / Bugcrowd / Intigriti … profile URLs shown in the bug bounty sections
+  bountyProfiles String[]
 }
 
 model Project {
@@ -126,6 +128,57 @@ model BlogPost {
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+/// A reported vulnerability shown in the public Hall of Fame.
+/// When privateProgram is true the program name and link never leave the server.
+model BountyFinding {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  program        String
+  privateProgram Boolean   @default(false)
+  platform       String?
+  severity       String    @default("medium") // critical | high | medium | low | info
+  vulnType       String?
+  bounty         Int? // whole currency units
+  currency       String?
+  cve            String?
+  hallOfFame     Boolean   @default(false)
+  date           DateTime?
+  link           String?
+  description    String?
+  createdAt      DateTime  @default(now())
+}
+
+/// Incoming work: VAPT requests ("vapt") and bug bounty program invites ("bounty").
+model Engagement {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  kind        String // vapt | bounty
+  status      String   @default("new") // new | reviewing | accepted | completed | declined
+  name        String
+  email       String
+  company     String?
+  message     String
+  // VAPT request
+  services    String[] // web | api | mobile | network | cloud | code
+  target      String?
+  timeline    String?
+  budget      String?
+  nda         Boolean  @default(false)
+  authorized  Boolean  @default(false)
+  // Bug bounty invite
+  programUrl  String?
+  platform    String?
+  programType String? // private | public | vdp | event
+  rewards     String?
+  // Admin only
+  notes       String?
+  ipHash      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([kind, createdAt])
+  @@index([ipHash, createdAt])
 }
 
 model ContactMessage {

@@ -7,12 +7,12 @@ import { CyberCursor } from "@/components/cyber/cyber-cursor";
 
 const SITE_TITLE = 'Bikram Dey | Hack. Secure. Defend.';
 const SITE_DESCRIPTION =
-  'Cybersecurity analyst & penetration tester. Signals from the digital trenches — projects, CTF operations, arsenal and transmissions.';
+  'Cybersecurity analyst & penetration tester. VAPT services, bug bounty hall of fame, projects, CTF operations and write-ups.';
 
 export const metadata = {
   title: SITE_TITLE,
   description: SITE_DESCRIPTION,
-  keywords: ['cybersecurity', 'penetration testing', 'CTF', 'red team', 'portfolio', 'Bikram Dey'],
+  keywords: ['cybersecurity', 'penetration testing', 'VAPT', 'bug bounty', 'CTF', 'red team', 'portfolio', 'Bikram Dey'],
   authors: [{ name: 'Bikram Dey' }],
   creator: 'Bikram Dey',
   openGraph: {
