@@ -305,7 +305,7 @@ export default function PixelCard({
   return (
     <div
       ref={containerRef}
-      className={`relative overflow-hidden grid place-items-center aspect-auto border border-primary/20 rounded-sm isolate transition-colors duration-200 ease-[cubic-bezier(0.5,1,0.89,1)] select-none bg-background/50 ${className}`}
+      className={`relative overflow-hidden grid place-items-center aspect-auto border border-primary/20 rounded-sm isolate transition-colors duration-200 [transition-timing-function:cubic-bezier(0.5,1,0.89,1)] select-none bg-background/50 ${className}`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onFocus={finalNoFocus ? undefined : onFocus}
