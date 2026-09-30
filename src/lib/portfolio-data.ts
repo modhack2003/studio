@@ -55,6 +55,7 @@ async function load() {
           customTags: true,
           displayOrder: true,
           pushedAt: true,
+          createdAt: true,
         },
       }),
       prisma.skill.findFirst({ select: { id: true, languages: true, tools: true, areas: true } }),

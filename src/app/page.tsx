@@ -27,6 +27,14 @@ export default async function Home() {
   const hasSkills = !!skills && skills.languages.length + skills.tools.length + skills.areas.length > 0;
   const hasBounty = bounty.findings.length > 0;
   const bountyProfiles = personalData?.bountyProfiles ?? [];
+
+  // Years active on GitHub, from the oldest repo's creation date (rounded down, min 0).
+  const oldestRepo = githubRepos.reduce<number | null>((min, r) => {
+    const t = r.createdAt ? new Date(r.createdAt).getTime() : NaN;
+    if (Number.isNaN(t)) return min;
+    return min === null ? t : Math.min(min, t);
+  }, null);
+  const operatorYears = oldestRepo ? Math.max(0, Math.floor((Date.now() - oldestRepo) / (365.25 * 24 * 60 * 60 * 1000))) : 0;
   const hidden = [!hasExperience && '#experience', !hasCtf && '#ctf', !hasSkills && '#skills'].filter(Boolean) as string[];
 
   let n = 0;
@@ -69,7 +77,17 @@ export default async function Home() {
               <ProjectsSection projects={projects} githubRepos={githubRepos} />
             </div>
 
-            <MaskedGenerator />
+            <MaskedGenerator
+              profile={{
+                name: personalData?.name,
+                title: personalData?.title,
+                location: personalData?.location,
+                github: personalData?.github,
+                languages: skills?.languages ?? [],
+                repoCount: githubRepos.length,
+                yearsActive: operatorYears,
+              }}
+            />
 
             {hasCtf && (
             <div className="space-y-14">
