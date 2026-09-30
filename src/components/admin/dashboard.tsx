@@ -4,11 +4,13 @@ import { useEffect, useState, type ComponentType } from 'react';
 import {
   Award,
   Briefcase,
+  Bug,
   FileText,
   Flag,
   FolderGit2,
   Github,
   GraduationCap,
+  Handshake,
   Inbox,
   LogOut,
   ShieldCheck,
@@ -25,6 +27,8 @@ import { GitHubPanel } from './github-panel';
 import { InboxPanel } from './inbox-panel';
 import { ImportPanel } from './import-panel';
 import { SecurityPanel } from './security-panel';
+import { RequestsPanel } from './requests-panel';
+import { CURRENCIES, FINDING_PLATFORMS, SEVERITIES, formatMoney } from '@/lib/bounty';
 import { Btn } from './ui';
 
 type Item = Parameters<CollectionEditorProps['itemTitle']>[0];
@@ -35,7 +39,42 @@ const monthYear = (v: unknown) => {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 };
 
+const opts = (list: readonly string[]) => list.map((v) => ({ value: v, label: v }));
+
 const COLLECTIONS: Record<string, CollectionEditorProps> = {
+  bounties: {
+    title: 'Bug bounty findings',
+    description:
+      'Shown in the Hall of Fame on the site. Tick “Private program” to hide the program name and link publicly — keep the summary free of identifying details too.',
+    endpoint: '/api/bounties',
+    addLabel: 'Add finding',
+    fields: [
+      { name: 'title', label: 'Finding title', type: 'text', required: true, wide: true, placeholder: 'Stored XSS in account settings' },
+      { name: 'program', label: 'Program / company', type: 'text', required: true, placeholder: 'Acme Corp VDP' },
+      { name: 'platform', label: 'Platform', type: 'select', options: opts(FINDING_PLATFORMS) },
+      { name: 'severity', label: 'Severity', type: 'select', required: true, defaultValue: 'medium', options: SEVERITIES.map((s) => ({ value: s.id, label: s.label })) },
+      { name: 'vulnType', label: 'Vulnerability type', type: 'text', placeholder: 'IDOR, XSS, SSRF…' },
+      { name: 'bounty', label: 'Bounty amount', type: 'number', hint: 'Whole number, leave empty if none' },
+      { name: 'currency', label: 'Currency', type: 'select', defaultValue: 'USD', options: opts(CURRENCIES) },
+      { name: 'date', label: 'Date reported / rewarded', type: 'date' },
+      { name: 'cve', label: 'CVE', type: 'text', placeholder: 'CVE-2025-12345' },
+      { name: 'link', label: 'Public link', type: 'url', hint: 'Disclosed report or hall of fame page (hidden for private programs)', wide: true },
+      { name: 'hallOfFame', label: 'Hall of fame / acknowledgement', type: 'checkbox' },
+      { name: 'privateProgram', label: 'Private program (hide name + link)', type: 'checkbox' },
+      { name: 'description', label: 'Public summary', type: 'textarea', rows: 3 },
+    ],
+    itemTitle: (i: Item) => String(i.title),
+    itemMeta: (i: Item) =>
+      [
+        String(i.severity ?? '').toUpperCase(),
+        i.privateProgram ? `${i.program} (private)` : i.program,
+        typeof i.bounty === 'number' && i.bounty > 0 ? formatMoney(i.bounty, i.currency as string | null) : null,
+        monthYear(i.date),
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    sort: (a: Item, b: Item) => new Date(String(b.date ?? b.createdAt ?? 0)).getTime() - new Date(String(a.date ?? a.createdAt ?? 0)).getTime(),
+  },
   experience: {
     title: 'Experience',
     description: 'Jobs, internships and freelance work. Importable from LinkedIn.',
@@ -136,10 +175,12 @@ type TabId =
   | 'projects'
   | 'github'
   | 'ctf'
+  | 'bounties'
   | 'education'
   | 'certificates'
   | 'skills'
   | 'blog'
+  | 'requests'
   | 'inbox'
   | 'import'
   | 'security';
@@ -150,10 +191,12 @@ const TABS: { id: TabId; label: string; icon: ComponentType<{ className?: string
   { id: 'projects', label: 'Projects', icon: FolderGit2 },
   { id: 'github', label: 'GitHub', icon: Github },
   { id: 'ctf', label: 'CTF', icon: Flag },
+  { id: 'bounties', label: 'Bug bounty', icon: Bug },
   { id: 'education', label: 'Education', icon: GraduationCap },
   { id: 'certificates', label: 'Certificates', icon: Award },
   { id: 'skills', label: 'Skills', icon: Wrench },
   { id: 'blog', label: 'Blog', icon: FileText },
+  { id: 'requests', label: 'Requests', icon: Handshake },
   { id: 'inbox', label: 'Inbox', icon: Inbox },
   { id: 'import', label: 'LinkedIn import', icon: Upload },
   { id: 'security', label: 'Security', icon: ShieldCheck },
@@ -168,6 +211,8 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [tab, setTab] = useState<TabId>('profile');
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [unread, setUnread] = useState(0);
+  const [newRequests, setNewRequests] = useState(0);
+  const badge = (id: TabId) => (id === 'inbox' ? unread : id === 'requests' ? newRequests : 0);
 
   // keep an eye on the session so an expired one is noticed without a failed save
   useEffect(() => {
@@ -183,6 +228,9 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   useEffect(() => {
     api<{ read: boolean }[]>('/api/messages')
       .then((m) => setUnread(m.filter((x) => !x.read).length))
+      .catch(() => {});
+    api<{ status: string }[]>('/api/engagements')
+      .then((r) => setNewRequests(r.filter((x) => x.status === 'new').length))
       .catch(() => {});
   }, []);
 
@@ -233,7 +281,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           {TABS.map((t) => (
             <option key={t.id} value={t.id}>
               {t.label}
-              {t.id === 'inbox' && unread ? ` (${unread})` : ''}
+              {badge(t.id) ? ` (${badge(t.id)})` : ''}
             </option>
           ))}
         </select>
@@ -252,8 +300,8 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             >
               <t.icon className="h-4 w-4" />
               <span className="flex-1">{t.label}</span>
-              {t.id === 'inbox' && unread > 0 && (
-                <span className={cn('px-1.5 text-[10px]', tab === t.id ? 'bg-ink text-signal' : 'bg-signal text-ink')}>{unread}</span>
+              {badge(t.id) > 0 && (
+                <span className={cn('px-1.5 text-[10px]', tab === t.id ? 'bg-ink text-signal' : 'bg-signal text-ink')}>{badge(t.id)}</span>
               )}
             </button>
           ))}
@@ -264,6 +312,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           {tab === 'skills' && <SkillsPanel />}
           {tab === 'github' && <GitHubPanel />}
           {tab === 'inbox' && <InboxPanel onUnreadChange={setUnread} />}
+          {tab === 'requests' && <RequestsPanel onNewCountChange={setNewRequests} />}
           {tab === 'import' && <ImportPanel />}
           {tab === 'security' && <SecurityPanel onLogout={onLogout} />}
           {tab in COLLECTIONS && <CollectionEditor key={tab} {...COLLECTIONS[tab]} />}

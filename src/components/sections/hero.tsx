@@ -136,10 +136,16 @@ export function HeroSection({ personalData }: { personalData: PersonalData | nul
             ))}
             <div className="flex flex-wrap items-center gap-6 px-3 py-6">
               <a
-                href="#projects"
+                href="#vapt"
                 className="bracket bg-ink/15 px-5 py-3 monofont text-xs uppercase tracking-[0.2em] transition-colors hover:bg-ink hover:text-signal"
               >
-                &gt;_EXECUTE_RECON
+                &gt;_REQUEST_VAPT
+              </a>
+              <a
+                href="#bounty"
+                className="monofont text-xs uppercase tracking-[0.2em] underline decoration-ink/40 underline-offset-4 hover:decoration-ink"
+              >
+                bug_bounty()
               </a>
               <a
                 href="#contact"

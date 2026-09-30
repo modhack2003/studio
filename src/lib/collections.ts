@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { collectionHandlers } from '@/lib/api';
 import {
   blogPostSchema,
+  bountyFindingSchema,
   certificateSchema,
   ctfSchema,
   educationSchema,
@@ -72,4 +73,13 @@ export const blogHandlers = collectionHandlers({
     }
     return out;
   },
+});
+
+/** Admin-only list: private program names must never be served by a public endpoint. */
+export const bountyHandlers = collectionHandlers({
+  label: 'Bounty finding',
+  delegate: d(prisma.bountyFinding),
+  schema: bountyFindingSchema,
+  orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+  privateList: true,
 });

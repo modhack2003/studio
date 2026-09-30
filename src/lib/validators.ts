@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { CURRENCIES, SEVERITY_IDS } from '@/lib/bounty';
+import { ENGAGEMENT_STATUS_IDS, INVITE_PLATFORMS, PROGRAM_TYPE_IDS, VAPT_SERVICE_IDS, VAPT_TIMELINE_IDS } from '@/lib/engagements';
 
 /* -------------------------------------------------------------------------- */
 /* Primitives                                                                  */
@@ -32,6 +34,13 @@ const optUrl = z
   .transform((v) => (typeof v === 'string' ? v.trim() : ''))
   .refine((v) => v === '' || v.startsWith('/') || isHttpUrl(v), 'Must be a valid http(s) URL')
   .transform((v) => (v === '' ? null : v));
+
+/** Optional absolute http(s) URL for public forms. '' → null */
+const optHttpUrl = z
+  .union([z.string(), z.null(), z.undefined()])
+  .transform((v) => (typeof v === 'string' ? v.trim() : ''))
+  .refine((v) => v === '' || isHttpUrl(v), 'Please enter a full link starting with https://')
+  .transform((v) => (v === '' ? null : v.slice(0, 500)));
 
 /** URL that may be blank but is stored as a string ('' allowed) */
 const urlOrEmpty = z
@@ -85,6 +94,40 @@ const reqDate = optDate.default(null).refine((d) => d !== null, 'Date is require
 
 const bool = z.union([z.boolean(), z.string(), z.null(), z.undefined()]).transform((v) => v === true || v === 'true' || v === 'on');
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const emailReq = z
+  .string({ error: 'Email is required' })
+  .trim()
+  .max(200)
+  .regex(EMAIL_RE, 'Please enter a valid email address');
+
+/** Optional choice from a fixed list: '' / null / undefined → fallback; anything else must be in the list. */
+const optEnum = <F extends string | null>(ids: readonly string[], fallback: F, label: string) =>
+  z
+    .union([z.string(), z.null(), z.undefined()])
+    .transform((v, ctx) => {
+      const val = typeof v === 'string' ? v.trim() : '';
+      if (!val) return fallback;
+      if (!ids.includes(val)) {
+        ctx.addIssue({ code: 'custom', message: `Unknown ${label}` });
+        return z.NEVER;
+      }
+      return val;
+    });
+
+/** List of http(s) URLs from an array or a newline / comma separated string (deduped, max 10). */
+const urlList = z
+  .union([z.array(z.string()), z.string(), z.null(), z.undefined()])
+  .transform((v, ctx) => {
+    const arr = (Array.isArray(v) ? v : typeof v === 'string' ? v.split(/[\n,]/) : []).map((x) => x.trim()).filter(Boolean);
+    const bad = arr.find((x) => !isHttpUrl(x));
+    if (bad) {
+      ctx.addIssue({ code: 'custom', message: `Not a valid http(s) URL: ${bad.slice(0, 80)}` });
+      return z.NEVER;
+    }
+    return [...new Set(arr)].slice(0, 10);
+  });
+
 /* -------------------------------------------------------------------------- */
 /* Models                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -105,6 +148,7 @@ export const personalDataSchema = z.object({
   resumeUrl: urlOrEmpty.default(''),
   avatarUrl: optUrl.default(null),
   location: optStr(120).default(null),
+  bountyProfiles: urlList.default([]),
 });
 
 export const skillsSchema = z.object({
@@ -188,6 +232,71 @@ export const repoSettingsSchema = z.object({
   displayOrder: optInt(0, 9999).optional(),
 });
 
+/* -------------------------------------------------------------------------- */
+/* Bug bounty findings (admin)                                                 */
+/* -------------------------------------------------------------------------- */
+export const bountyFindingSchema = z.object({
+  title: reqStr(200, 'Title'),
+  program: reqStr(160, 'Program'),
+  privateProgram: bool.default(false),
+  platform: optStr(60).default(null),
+  severity: optEnum(SEVERITY_IDS, 'medium', 'severity').default('medium'),
+  vulnType: optStr(80).default(null),
+  bounty: optInt(0, 100_000_000).default(null),
+  currency: optEnum(CURRENCIES, null, 'currency').default(null),
+  cve: optStr(40)
+    .default(null)
+    .refine((v) => v === null || /^CVE-\d{4}-\d{4,}$/i.test(v), 'CVE must look like CVE-2025-12345')
+    .transform((v) => v?.toUpperCase() ?? null),
+  hallOfFame: bool.default(false),
+  date: optDate.default(null),
+  link: optUrl.default(null),
+  description: optStr(2000).default(null),
+});
+
+/* -------------------------------------------------------------------------- */
+/* Public requests: VAPT + bug bounty invites                                  */
+/* -------------------------------------------------------------------------- */
+const vaptRequestSchema = z.object({
+  kind: z.literal('vapt'),
+  name: reqStr(120, 'Name'),
+  email: emailReq,
+  company: optStr(160).default(null),
+  target: optStr(500).default(null),
+  services: z
+    .array(z.enum(VAPT_SERVICE_IDS), { error: 'Pick at least one service' })
+    .min(1, 'Pick at least one service')
+    .max(VAPT_SERVICE_IDS.length)
+    .transform((v) => [...new Set(v)]),
+  timeline: optEnum(VAPT_TIMELINE_IDS, 'flexible', 'timeline').default('flexible'),
+  budget: optStr(80).default(null),
+  message: reqStr(5000, 'Project details'),
+  nda: bool.default(false),
+  authorized: z.literal(true, { error: 'Please confirm you are authorised to request testing of these systems' }),
+  hp: z.string().optional(), // honeypot
+});
+
+const bountyInviteSchema = z.object({
+  kind: z.literal('bounty'),
+  company: reqStr(160, 'Company'),
+  name: reqStr(120, 'Name'),
+  email: emailReq,
+  programUrl: optHttpUrl.default(null),
+  platform: optEnum(INVITE_PLATFORMS, null, 'platform').default(null),
+  programType: optEnum(PROGRAM_TYPE_IDS, 'private', 'program type').default('private'),
+  rewards: optStr(120).default(null),
+  message: reqStr(5000, 'Message'),
+  hp: z.string().optional(), // honeypot
+});
+
+export const engagementSchema = z.discriminatedUnion('kind', [vaptRequestSchema, bountyInviteSchema]);
+export type EngagementInput = z.infer<typeof engagementSchema>;
+
+export const engagementUpdateSchema = z.object({
+  status: z.enum(ENGAGEMENT_STATUS_IDS).optional(),
+  notes: optStr(5000).optional(),
+});
+
 export const contactSchema = z.object({
   name: reqStr(120, 'Name'),
   email: z.string().trim().max(200).regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email'),
@@ -196,10 +305,10 @@ export const contactSchema = z.object({
   website: z.string().optional(), // honeypot
 });
 
-/** Formats the first zod issue as a readable message. */
-export function zodMessage(error: z.ZodError): string {
+/** Formats the first zod issue as a readable message (public forms omit the field path). */
+export function zodMessage(error: z.ZodError, opts: { withPath?: boolean } = {}): string {
   const issue = error.issues[0];
   if (!issue) return 'Invalid input';
   const path = issue.path.join('.');
-  return path ? `${path}: ${issue.message}` : issue.message;
+  return path && opts.withPath !== false ? `${path}: ${issue.message}` : issue.message;
 }
