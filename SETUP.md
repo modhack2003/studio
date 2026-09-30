@@ -34,6 +34,8 @@ npm run dev            # http://localhost:9002
 - **LinkedIn import:** LinkedIn blocks automated reads, so request your data export (*Settings & Privacy → Data privacy → Get a copy of your data*) and drop the `.zip` in **Admin → LinkedIn import**. It previews first; nothing is saved until you press *Import now*. Imports profile headline/summary, experience, education, certifications, projects and skills.
 - **Inbox:** contact-form messages are stored in MongoDB (rate-limited, with a honeypot).
 - **Blog:** write posts in Markdown; only published posts appear, at `/blog/<slug>`.
+- **Bug bounty:** add findings in **Admin → Bug bounty**. Tick *Private program* to hide the program name and link on the site (they are removed on the server, not just hidden). The Hall of Fame section appears once there is at least one finding. Add your HackerOne / Bugcrowd / … profile links in **Profile**, one per line.
+- **Requests:** VAPT requests and bug bounty program invites arrive in **Admin → Requests** with a reference code (`VAPT-…` / `BB-…`). Set a status, keep private notes and reply by email. The tab shows a badge with the number of new requests.
 
 Every save refreshes the public pages immediately; otherwise they re-render at most once a minute.
 
