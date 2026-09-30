@@ -1,10 +1,24 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowUpRight, Star, GitFork, LayoutGrid, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Reveal, TiltCard } from '@/components/cyber/primitives';
+import {
+  LANGUAGE_COLORS,
+  languageAccent,
+  safeClassifyRepoObject,
+  type RepoObjectInput,
+} from '@/components/cyber/repo-object-kind';
+import { RepoKindGlyph, SHOW_TILE_GLYPHS } from '@/components/cyber/repo-kind-glyph';
+
+// `three` stays out of the server render and the initial page chunk — same idiom as hero.tsx.
+const RepoObjectStage = dynamic(() => import('@/components/cyber/repo-object-stage').then((m) => m.RepoObjectStage), {
+  ssr: false,
+  loading: () => null,
+});
 
 interface Project {
   title: string;
@@ -44,6 +58,8 @@ type Entry = {
   primaryLabel: string;
   demoHref?: string | null;
   meta?: string;
+  /** raw fields for the 3D object classifier — additive, nothing else reads it */
+  signals: RepoObjectInput;
 };
 
 const INITIAL_REPOS = 5;
@@ -57,6 +73,7 @@ function toEntries(projects: Project[], repos: GitHubRepository[]): Entry[] {
     tags: p.tags,
     primaryHref: p.link ?? undefined,
     primaryLabel: 'View Project',
+    signals: { name: p.title, description: p.description, customTags: p.tags },
   }));
   const b: Entry[] = repos.map((repo) => ({
     key: `gh-${repo.id}`,
@@ -71,29 +88,20 @@ function toEntries(projects: Project[], repos: GitHubRepository[]): Entry[] {
     primaryLabel: 'View on GitHub',
     demoHref: repo.homepage,
     meta: repo.fullName,
+    // the classifier needs the bare fields, not the flattened display values above
+    signals: {
+      name: repo.name,
+      description: repo.customDescription || repo.description,
+      readmeExcerpt: repo.readmeExcerpt,
+      language: repo.language,
+      topics: repo.topics,
+      customTags: repo.customTags,
+    },
   }));
   return [...a, ...b];
 }
 
-// A colour per language so the preview panel reads like a GitHub repo card.
-const LANGUAGE_COLORS: Record<string, string> = {
-  TypeScript: '#3178C6',
-  JavaScript: '#F1E05A',
-  Python: '#3572A5',
-  HTML: '#E34C26',
-  CSS: '#563D7C',
-  EJS: '#A91E50',
-  Shell: '#89E051',
-  C: '#555555',
-  'C++': '#F34B7D',
-  Java: '#B07219',
-  Go: '#00ADD8',
-  Rust: '#DEA584',
-  Solidity: '#AA6746',
-  Dart: '#00B4AB',
-  Vue: '#41B883',
-  PHP: '#4F5D95',
-};
+// The per-language colour map lives with the classifier so the CSS dot and the 3D accent agree.
 const langColor = (lang?: string | null) => (lang && LANGUAGE_COLORS[lang]) || 'hsl(var(--cyan))';
 
 // Deterministic pseudo-random from a string, so a repo's "commit graph" is stable per repo.
@@ -112,12 +120,11 @@ function seeded(seed: string) {
 }
 
 /**
- * Repo preview graphic — a GitHub-flavoured panel instead of an abstract cube.
- * Shows the language dot + name, a contribution-style activity grid, and the
- * repo's stars/forks. For hand-picked field projects it falls back to a compact
- * "field project" tag block.
+ * The contribution-style activity grid. Unchanged markup: it is still the sizing reference and the
+ * fallback whenever the 3D object cannot run (safe mode, reduced motion, no WebGL, chunk not loaded),
+ * in which case the card looks exactly as it did before the 3D object existed.
  */
-function RepoGraphic({ entry, index, total }: { entry?: Entry; index: number; total: number }) {
+function ActivityGrid({ entry, index, color, dimmed }: { entry?: Entry; index: number; color: string; dimmed: boolean }) {
   const cells = useMemo(() => {
     const rand = seeded(entry?.key ?? `slot-${index}`);
     const weight = entry?.kind === 'repo' ? 0.55 : 0.35;
@@ -127,60 +134,96 @@ function RepoGraphic({ entry, index, total }: { entry?: Entry; index: number; to
     });
   }, [entry?.key, entry?.kind, index]);
 
+  return (
+    <div className={cn('relative grid grid-cols-12 gap-[3px] transition-opacity duration-500', dimmed && 'opacity-0')}>
+      {cells.map((level, i) => (
+        <span
+          key={i}
+          className="aspect-square w-full rounded-[1px] transition-colors duration-500"
+          style={{
+            backgroundColor: level === 0 ? 'hsl(var(--signal) / 0.1)' : color,
+            opacity: level === 0 ? 1 : 0.35 + level * 0.16,
+            transitionDelay: `${(i % 12) * 12}ms`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Repo preview graphic — same GitHub-flavoured panel, with a contextual 3D object rendered into the
+ * activity block: an ESP32 board for a firmware repo, bat + ball + trophy for the cricket repo, an
+ * extruded stack badge for an ordinary code repo. The object is chosen from the repo's own metadata.
+ */
+function RepoGraphic({ entry, index, total }: { entry?: Entry; index: number; total: number }) {
+  const kind = useMemo(() => safeClassifyRepoObject(entry?.signals), [entry?.signals]);
+  const accent = languageAccent(entry?.language);
+  const [objectLive, setObjectLive] = useState(false);
+  const onStatus = useCallback((status: 'live' | 'fallback') => setObjectLive(status === 'live'), []);
+
   const color = langColor(entry?.language);
   const isRepo = entry?.kind === 'repo';
 
   return (
     <div className="relative flex h-44 flex-col justify-between overflow-hidden border-b border-signal/40 bg-ink/40 p-4" aria-hidden>
+      {/* the 3D object sits behind the crosshair overlay and is inert to pointer/touch input */}
+      <RepoObjectStage kind={kind} accent={accent} onStatus={onStatus} className="pointer-events-none absolute inset-0" />
       <div aria-hidden className="grid-cross pointer-events-none absolute inset-0 opacity-30" />
 
       {/* header: language dot + name + slot */}
-      <div className="relative flex items-center justify-between">
-        <div className="flex items-center gap-2 monofont text-[10px] uppercase tracking-[0.25em] text-bone/80">
-          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
-          {entry?.language || (isRepo ? 'repo' : 'field project')}
-        </div>
-        <span className="monofont text-[10px] uppercase tracking-[0.3em] text-signal">
-          {String(index + 1).padStart(2, '0')}/{String(total).padStart(2, '0')}
-        </span>
-      </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`lang-${entry?.key ?? index}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25 }}
+          className="relative z-10 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-2 monofont text-[10px] uppercase tracking-[0.25em] text-bone/80">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+            {entry?.language || (isRepo ? 'repo' : 'field project')}
+          </div>
+          <span className="monofont text-[10px] uppercase tracking-[0.3em] text-signal">
+            {String(index + 1).padStart(2, '0')}/{String(total).padStart(2, '0')}
+          </span>
+        </motion.div>
+      </AnimatePresence>
 
-      {/* contribution-style activity grid */}
-      <div className="relative grid grid-cols-12 gap-[3px]">
-        {cells.map((level, i) => (
-          <span
-            key={i}
-            className="aspect-square w-full rounded-[1px] transition-colors duration-500"
-            style={{
-              backgroundColor: level === 0 ? 'hsl(var(--signal) / 0.1)' : color,
-              opacity: level === 0 ? 1 : 0.35 + level * 0.16,
-              transitionDelay: `${(i % 12) * 12}ms`,
-            }}
-          />
-        ))}
-      </div>
+      {/* contribution-style activity grid — fades out once the object is live, keeps its box either way */}
+      <ActivityGrid entry={entry} index={index} color={color} dimmed={objectLive} />
 
       {/* footer: stars / forks for repos, tag count for field projects */}
-      <div className="relative flex items-center justify-between monofont text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-        {isRepo ? (
-          <>
-            <span className="inline-flex items-center gap-1 text-signal">
-              <Star className="h-3 w-3" />
-              {entry?.stars ?? 0}
-            </span>
-            <span className="inline-flex items-center gap-1 text-signal">
-              <GitFork className="h-3 w-3" />
-              {entry?.forks ?? 0}
-            </span>
-            <span className="text-cyan">{'// commit_map'}</span>
-          </>
-        ) : (
-          <>
-            <span className="text-signal">{'// field_project'}</span>
-            <span className="text-cyan">{entry?.tags.length ?? 0} tags</span>
-          </>
-        )}
-      </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`stats-${entry?.key ?? index}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25 }}
+          className="relative z-10 flex items-center justify-between monofont text-[10px] uppercase tracking-[0.2em] text-muted-foreground"
+        >
+          {isRepo ? (
+            <>
+              <span className="inline-flex items-center gap-1 text-signal">
+                <Star className="h-3 w-3" />
+                {entry?.stars ?? 0}
+              </span>
+              <span className="inline-flex items-center gap-1 text-signal">
+                <GitFork className="h-3 w-3" />
+                {entry?.forks ?? 0}
+              </span>
+              <span className="text-cyan">{'// commit_map'}</span>
+            </>
+          ) : (
+            <>
+              <span className="text-signal">{'// field_project'}</span>
+              <span className="text-cyan">{entry?.tags.length ?? 0} tags</span>
+            </>
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
@@ -219,17 +262,9 @@ export function ProjectsSection({ projects, githubRepos }: { projects: Project[]
               {String(active + 1).padStart(2, '0')}/{String(entries.length).padStart(2, '0')}
             </span>
           </div>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={current?.key ?? active}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
-            >
-              <RepoGraphic entry={current} index={active} total={entries.length} />
-            </motion.div>
-          </AnimatePresence>
+          {/* not keyed on the entry: remounting this block would recreate the WebGL canvas on every
+              selection, so the 0.25s crossfade lives on the chrome rows inside it instead */}
+          <RepoGraphic entry={current} index={active} total={entries.length} />
           <AnimatePresence mode="wait">
             {current && (
               <motion.div
@@ -360,6 +395,14 @@ export function ProjectsSection({ projects, githubRepos }: { projects: Project[]
                         <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5" />{e.stars}</span>
                         <span className="inline-flex items-center gap-1"><GitFork className="h-3.5 w-3.5" />{e.forks}</span>
                       </div>
+                    )}
+                    {/* additive only: absolute + pointer-events-none in existing empty corner space,
+                        so no tile content moves and the tile keeps its dimensions */}
+                    {SHOW_TILE_GLYPHS && (
+                      <RepoKindGlyph
+                        kind={safeClassifyRepoObject(e.signals)}
+                        className="pointer-events-none absolute right-4 top-16 h-16 w-16 text-bone/[0.14] transition-colors duration-300 group-hover:text-cyan/30"
+                      />
                     )}
                   </button>
                 </TiltCard>
