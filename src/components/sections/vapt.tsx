@@ -121,8 +121,8 @@ export function VaptSection({ email }: { email?: string | null }) {
       <div className="space-y-14 lg:col-span-7">
         {/* service catalog */}
         <div>
-          <div className="mb-5 flex items-center justify-between monofont text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-            <span className="text-signal">{'// service_catalog'}</span>
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 monofont text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+            <span className="whitespace-nowrap text-signal">{'// service_catalog'}</span>
             <span aria-live="polite">{services.length ? `${services.length} selected for scope` : 'tap a service to add it to scope'}</span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
