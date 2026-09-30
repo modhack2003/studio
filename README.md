@@ -359,7 +359,7 @@ The admin console, first login and day‑to‑day content workflow are covered i
 
 ## Credits
 
-- Visual language inspired by [utopiatokyo.com](https://utopiatokyo.com).
+- Visual language inspired by @bikramdey2003.
 - The Sharingan is a fan tribute to *Naruto* by Masashi Kishimoto.
 - Fonts from Google Fonts (SIL Open Font License).
 
