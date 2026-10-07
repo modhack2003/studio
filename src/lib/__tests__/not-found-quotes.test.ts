@@ -1,16 +1,27 @@
-import { NOT_FOUND_QUOTES, NOT_FOUND_QUOTE_KEY, takeNotFoundQuote } from '../not-found-quotes';
+import { NOT_FOUND_QUOTES, NOT_FOUND_QUOTE_KEY, getQuoteClock, quoteIndexAt } from '../not-found-quotes';
 
-describe('lost-route quote rotation', () => {
+describe('lost-route quote clock', () => {
+  const now = 1_790_000_000_000;
   beforeEach(() => sessionStorage.clear());
 
-  it('cycles through ten distinct quotes and wraps on the next visit', () => {
-    expect(new Set(NOT_FOUND_QUOTES).size).toBe(10);
-    expect(Array.from({ length: 11 }, () => takeNotFoundQuote(sessionStorage))).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
+  it('has twenty distinct quotes and changes at ten-second boundaries', () => {
+    expect(new Set(NOT_FOUND_QUOTES).size).toBe(20);
+    expect(quoteIndexAt(now, now + 9999)).toBe(0);
+    expect(quoteIndexAt(now, now + 10000)).toBe(1);
+    expect(quoteIndexAt(now, now + 199999)).toBe(19);
+    expect(quoteIndexAt(now, now + 200000)).toBe(0);
   });
 
-  it.each(['NaN', '-1', '10', '1.5', 'Infinity'])('recovers from an invalid saved index: %s', (value) => {
+  it('preserves the clock on refresh and catches up after an inactive tab', () => {
+    expect(getQuoteClock(sessionStorage, now)).toBe(now);
+    const anchor = getQuoteClock(sessionStorage, now + 17000);
+    expect(anchor).toBe(now);
+    expect(quoteIndexAt(anchor, now + 20000)).toBe(2);
+    expect(quoteIndexAt(anchor, now + 65000)).toBe(6);
+  });
+
+  it.each(['NaN', '-1', '0', '1.5', 'Infinity', String(now + 1)])('recovers from an invalid saved clock: %s', (value) => {
     sessionStorage.setItem(NOT_FOUND_QUOTE_KEY, value);
-    expect(takeNotFoundQuote(sessionStorage)).toBe(0);
-    expect(takeNotFoundQuote(sessionStorage)).toBe(1);
+    expect(getQuoteClock(sessionStorage, now)).toBe(now);
   });
 });

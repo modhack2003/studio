@@ -10,15 +10,30 @@ export const NOT_FOUND_QUOTES = [
   'Access denied is a boundary. Not found is a question.',
   'The hardest truth: waiting will not create the missing page.',
   'Lost is a location, not an identity.',
+  'A perfect illusion still breaks when you ask the right question.',
+  'The truth does not become kinder because you look away.',
+  'Every mask hides a face. Every silence hides a story.',
+  'You can patch a system. You must choose to change yourself.',
+  'Some battles end only when you stop fighting your own reflection.',
+  'No map can replace the courage to take the next step.',
+  'The empty page cannot answer for the life you postponed.',
+  'A crow leaves no footprints in the sky. Keep looking anyway.',
+  'Knowing the vulnerability is not the same as fixing it.',
+  'Even in the dark, you can decide which way to turn.',
 ] as const;
 
-export const NOT_FOUND_QUOTE_KEY = 'nd-404-next-quote';
+export const NOT_FOUND_QUOTE_KEY = 'nd-404-quote-clock';
+export const QUOTE_INTERVAL_MS = 10_000;
 
-/** Persist the next index, so reloads and return visits cycle without repeats. */
-export function takeNotFoundQuote(storage: Pick<Storage, 'getItem' | 'setItem'>): number {
+/** A persistent clock keeps the same ten-second cadence across refreshes. */
+export function getQuoteClock(storage: Pick<Storage, 'getItem' | 'setItem'>, now: number): number {
   const value = storage.getItem(NOT_FOUND_QUOTE_KEY);
-  const parsed = value === null ? 0 : Number(value);
-  const index = Number.isInteger(parsed) && parsed >= 0 && parsed < NOT_FOUND_QUOTES.length ? parsed : 0;
-  storage.setItem(NOT_FOUND_QUOTE_KEY, String((index + 1) % NOT_FOUND_QUOTES.length));
-  return index;
+  const saved = value === null ? NaN : Number(value);
+  if (Number.isSafeInteger(saved) && saved > 0 && saved <= now) return saved;
+  storage.setItem(NOT_FOUND_QUOTE_KEY, String(now));
+  return now;
+}
+
+export function quoteIndexAt(anchor: number, now: number): number {
+  return Math.floor(Math.max(0, now - anchor) / QUOTE_INTERVAL_MS) % NOT_FOUND_QUOTES.length;
 }

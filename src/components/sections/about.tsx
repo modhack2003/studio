@@ -1,3 +1,4 @@
+import { CertificateList, type Certificate } from './certificate-list';
 import { Github, Linkedin, ArrowUpRight } from 'lucide-react';
 import { Reveal, ScrambleText, TiltCard } from '@/components/cyber/primitives';
 
@@ -16,12 +17,7 @@ interface Education {
   duration: string;
 }
 
-interface Certificate {
-  name: string;
-  issuer: string;
-  year: number;
-  url?: string | null;
-}
+
 
 export function AboutSection({
   personalData,
@@ -164,35 +160,7 @@ export function AboutSection({
               <span>{'// clearances'}</span>
               <span className="font-jp">資格</span>
             </h3>
-            <ul className="space-y-3">
-              {certificates.map((cert, i) => (
-                <Reveal as="li" key={cert.name} delay={i * 0.06}>
-                  {(() => {
-                    const body = (
-                      <>
-                        <div>
-                          <p className="text-sm font-semibold">{cert.name}</p>
-                          <p className="monofont text-[10px] uppercase tracking-widest text-muted-foreground group-hover:text-ink/70">
-                            {cert.issuer}
-                            {cert.url && ' · verify ↗'}
-                          </p>
-                        </div>
-                        <span className="font-display text-xl font-bold text-signal group-hover:text-ink">{cert.year}</span>
-                      </>
-                    );
-                    const cls =
-                      'clip-notch-sm group relative flex items-center justify-between gap-4 bg-card px-4 py-3 transition-colors hover:bg-signal hover:text-ink';
-                    return cert.url ? (
-                      <a href={cert.url} target="_blank" rel="noopener noreferrer" className={cls}>
-                        {body}
-                      </a>
-                    ) : (
-                      <div className={cls}>{body}</div>
-                    );
-                  })()}
-                </Reveal>
-              ))}
-            </ul>
+            <CertificateList certificates={certificates} />
           </div>
           )}
         </div>
