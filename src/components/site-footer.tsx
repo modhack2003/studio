@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Github, Linkedin, Mail, FileText, type LucideIcon } from 'lucide-react';
+import { HomeFooterQuote } from '@/components/cyber/home-footer-quote';
 
 interface PersonalData {
   name: string;
@@ -71,6 +72,8 @@ export function SiteFooter({ className, personalData }: React.HTMLAttributes<HTM
             {name}
           </p>
         )}
+
+        <HomeFooterQuote />
 
         <div className="mt-6 flex items-center justify-between border-t border-signal/30 pt-4 monofont text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
           <span>END OF TRANSMISSION</span>
