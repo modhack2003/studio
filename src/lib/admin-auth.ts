@@ -2,6 +2,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
+import { throttleTransaction } from '@/lib/throttle-transaction';
 import {
   generateSessionToken,
   getClientIp,
@@ -41,8 +43,8 @@ export async function getPinStatus(): Promise<{ source: PinSource; weak: boolean
 }
 
 /** Checks a PIN against the DB hash (if set from the dashboard) or ADMIN_PIN. */
-export async function verifyAdminPin(pin: string): Promise<boolean> {
-  const cred = await prisma.adminCredential.findUnique({ where: { key: 'admin' } });
+export async function verifyAdminPin(pin: string, db: Prisma.TransactionClient = prisma): Promise<boolean> {
+  const cred = await db.adminCredential.findUnique({ where: { key: 'admin' } });
   if (cred) return verifyPinHash(pin, cred.pinHash);
   const env = process.env.ADMIN_PIN;
   if (!env) throw new AuthConfigError('No admin PIN configured. Set ADMIN_PIN in the environment.');
@@ -61,18 +63,18 @@ export async function setAdminPin(pin: string): Promise<void> {
 /* -------------------------------------------------------------------------- */
 /* Lockouts                                                                    */
 /* -------------------------------------------------------------------------- */
-export async function getLoginThrottle(ip: string): Promise<{ allowed: boolean; retryAfterMs: number; remaining: number }> {
+export async function getLoginThrottle(ip: string, db: Prisma.TransactionClient = prisma): Promise<{ allowed: boolean; retryAfterMs: number; remaining: number }> {
   const now = Date.now();
   const windowStart = new Date(now - FAILURE_WINDOW_MS);
 
-  const lastSuccess = await prisma.loginAttempt.findFirst({
+  const lastSuccess = await db.loginAttempt.findFirst({
     where: { ip, success: true },
     orderBy: { createdAt: 'desc' },
     select: { createdAt: true },
   });
   const since = lastSuccess && lastSuccess.createdAt > windowStart ? lastSuccess.createdAt : windowStart;
 
-  const failures = await prisma.loginAttempt.findMany({
+  const failures = await db.loginAttempt.findMany({
     where: { ip, success: false, createdAt: { gt: since } },
     orderBy: { createdAt: 'desc' },
     take: MAX_FAILED_ATTEMPTS,
@@ -84,11 +86,11 @@ export async function getLoginThrottle(ip: string): Promise<{ allowed: boolean; 
     if (until > now) return { allowed: false, retryAfterMs: until - now, remaining: 0 };
   }
 
-  const globalFailures = await prisma.loginAttempt.count({
+  const globalFailures = await db.loginAttempt.count({
     where: { success: false, createdAt: { gt: windowStart } },
   });
   if (globalFailures >= GLOBAL_MAX_FAILURES) {
-    const newest = await prisma.loginAttempt.findFirst({
+    const newest = await db.loginAttempt.findFirst({
       where: { success: false },
       orderBy: { createdAt: 'desc' },
       select: { createdAt: true },
@@ -100,17 +102,27 @@ export async function getLoginThrottle(ip: string): Promise<{ allowed: boolean; 
   return { allowed: true, retryAfterMs: 0, remaining: Math.max(0, MAX_FAILED_ATTEMPTS - failures.length) };
 }
 
-export async function recordLoginAttempt(ip: string, success: boolean, userAgent: string | null) {
-  await prisma.loginAttempt.create({
-    data: { ip, success, userAgent: userAgent?.slice(0, 300) ?? null },
+/** Check and record under the same database guard, including the PIN-change path. */
+export async function checkAdminPin(pin: string, ip: string, userAgent: string | null, recordSuccess = true) {
+  const result = await throttleTransaction('admin-login', async (tx) => {
+    const throttle = await getLoginThrottle(ip, tx);
+    if (!throttle.allowed) return { throttle, ok: null };
+    const ok = await verifyAdminPin(pin, tx);
+    if (!ok || recordSuccess) {
+      await tx.loginAttempt.create({
+        data: { ip, success: ok, userAgent: userAgent?.slice(0, 300) ?? null },
+      });
+    }
+    return { throttle, ok };
   });
-  if (success) {
-    // opportunistic housekeeping
+  if (result.ok && recordSuccess) {
+    // Housekeeping stays outside the retried transaction.
     await prisma.loginAttempt
       .deleteMany({ where: { createdAt: { lt: new Date(Date.now() - ATTEMPT_RETENTION_MS) } } })
       .catch(() => {});
     await prisma.adminSession.deleteMany({ where: { expiresAt: { lt: new Date() } } }).catch(() => {});
   }
+  return result;
 }
 
 /* -------------------------------------------------------------------------- */

@@ -1,0 +1,35 @@
+name: Checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test -- --runInBand
+      - name: Start disposable MongoDB replica set
+        run: |
+          docker run --detach --name throttle-mongo --publish 27017:27017 mongo:7 --replSet rs0 --bind_ip_all
+          for attempt in $(seq 1 30); do
+            if docker exec throttle-mongo mongosh --quiet --eval 'db.adminCommand({ ping: 1 })'; then
+              break
+            fi
+            sleep 1
+          done
+          docker exec throttle-mongo mongosh --quiet --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]})'
+      - name: Verify concurrent throttle limits
+        run: npx tsx scripts/test-throttles.ts
+        env:
+          THROTTLE_TEST_DATABASE_URL: mongodb://127.0.0.1:27017/studio_throttle_test?replicaSet=rs0
+      - run: npm run build
