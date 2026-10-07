@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ExternalLink, GitFork, Pin, RefreshCw, Star, Trash2 } from 'lucide-react';
+import { parseGitHubUsername } from '@/lib/github';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { api, errorMessage } from './api-client';
@@ -46,6 +47,8 @@ export function GitHubPanel() {
   const [repos, setRepos] = useState<Repo[]>([]);
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [username, setUsername] = useState('');
   const [filter, setFilter] = useState<'all' | 'visible' | 'hidden'>('all');
@@ -55,11 +58,14 @@ export function GitHubPanel() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
-      const data = await api<{ repositories: Repo[]; stats: { lastSync: string | null } }>('/api/github/repos');
+      const data = await api<{ repositories: Repo[]; stats: { lastSync: string | null; lastError: string | null } }>('/api/github/repos');
       setRepos(data.repositories);
       setLastSync(data.stats.lastSync);
+      setSyncError(data.stats.lastError);
     } catch (e) {
+      setLoadError(true);
       toast({ title: 'Could not load repositories', description: errorMessage(e), variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -67,19 +73,38 @@ export function GitHubPanel() {
   }, [toast]);
 
   useEffect(() => {
-    load();
+    let cancelled = false;
+    void (async () => {
+      await load();
+      if (cancelled) return;
+      setSyncing(true);
+      try {
+        const result = await api<{ skipped: boolean }>('/api/github/sync', { method: 'POST', body: { automatic: true } });
+        if (!cancelled && !result.skipped) await load();
+      } catch (e) {
+        if (!cancelled) setSyncError(errorMessage(e));
+      } finally {
+        if (!cancelled) setSyncing(false);
+      }
+    })();
     api<{ github?: string } | null>('/api/personal-data')
       .then((p) => {
-        const m = p?.github?.match(/github\.com\/([A-Za-z0-9-]+)/i);
-        if (m) setUsername(m[1]);
+        const name = parseGitHubUsername(p?.github);
+        if (!cancelled && name) setUsername(name);
       })
       .catch(() => {});
+    return () => { cancelled = true; };
   }, [load]);
 
   const sync = async () => {
+    if (syncing || busy) return;
     setSyncing(true);
     try {
-      const { data } = await api<{ data: SyncData }>('/api/github/sync', { method: 'POST', body: { username: username || undefined } });
+      const { data, skipped } = await api<{ data: SyncData | null; skipped: boolean }>('/api/github/sync', { method: 'POST', body: { username: username || undefined } });
+      if (skipped || !data) {
+        toast({ title: 'Sync is already running', description: 'Wait a moment, then reload the list.' });
+        return;
+      }
       toast({
         title: `Synced ${data.total} repositories`,
         description: `${data.created} new · ${data.updated} updated · ${data.removed} removed · ${data.visible} shown on the site${
@@ -95,6 +120,7 @@ export function GitHubPanel() {
   };
 
   const update = async (repo: Repo, body: Record<string, unknown>, message?: string) => {
+    if (busy || syncing) return false;
     setBusy(repo.id);
     try {
       const { repository } = await api<{ repository: Repo }>(`/api/github/repos/${repo.id}`, { method: 'PUT', body });
@@ -110,6 +136,7 @@ export function GitHubPanel() {
   };
 
   const remove = async (repo: Repo) => {
+    if (busy || syncing) return;
     if (!window.confirm(`Remove ${repo.name} from the database? It will come back on the next sync if it still exists on GitHub.`)) return;
     setBusy(repo.id);
     try {
@@ -157,8 +184,8 @@ export function GitHubPanel() {
       title="GitHub repositories"
       description={
         <>
-          The site shows pinned repos first, then the <b>5 latest</b>; visitors can expand to see all {visibleCount} visible repos. Last sync:{' '}
-          {formatDate(lastSync, { dateStyle: 'medium', timeStyle: 'short' })}
+          The site shows every pinned repo plus the <b>5 latest unpinned</b>; visitors can expand to see all {visibleCount} visible repos. Last sync:{' '}
+          {formatDate(lastSync, { dateStyle: 'medium', timeStyle: 'short' })}. Refreshes automatically when this tab opens and data is over six hours old; daily sync runs in production.
         </>
       }
       actions={
@@ -167,10 +194,12 @@ export function GitHubPanel() {
             aria-label="GitHub username"
             placeholder="github username"
             value={username}
+            disabled={syncing || !!busy}
             onChange={(e) => setUsername(e.target.value)}
             className="w-44 py-1.5"
           />
-          <Btn onClick={sync} busy={syncing}>
+          <Btn variant="ghost" onClick={load} disabled={loading || syncing || !!busy}>Refresh list</Btn>
+          <Btn onClick={sync} busy={syncing} disabled={loading || !!busy}>
             <RefreshCw className="h-3.5 w-3.5" /> Sync now
           </Btn>
         </>
@@ -192,8 +221,11 @@ export function GitHubPanel() {
         ))}
       </div>
 
+      {syncError && <p role="status" className="mb-4 text-xs text-destructive">{syncError}</p>}
       {loading ? (
         <p className="py-8 text-center monofont text-xs uppercase tracking-[0.3em] text-muted-foreground">loading…</p>
+      ) : loadError ? (
+        <Btn variant="outline" onClick={load}>Retry loading</Btn>
       ) : repos.length === 0 ? (
         <EmptyState>No repositories yet — press “Sync now”.</EmptyState>
       ) : (
@@ -211,6 +243,7 @@ export function GitHubPanel() {
                     )}
                     {repo.fork && <Badge tone="muted">fork</Badge>}
                     {repo.archived && <Badge tone="muted">archived</Badge>}
+                    <Badge tone={repo.displayInPortfolio ? 'cyan' : 'muted'}>{repo.displayInPortfolio ? 'shown on site' : 'hidden from site'}</Badge>
                     {repo.language && <Badge tone="cyan">{repo.language}</Badge>}
                   </div>
                   <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
@@ -229,13 +262,13 @@ export function GitHubPanel() {
                   <Toggle
                     label={`Show ${repo.name} on the site`}
                     checked={repo.displayInPortfolio}
-                    disabled={busy === repo.id}
+                    disabled={!!busy || syncing}
                     onChange={(v) => update(repo, { displayInPortfolio: v }, v ? `${repo.name} is now shown` : `${repo.name} is hidden`)}
                   />
-                  <Btn variant="ghost" size="sm" onClick={() => openEditor(repo)}>
+                  <Btn variant="ghost" size="sm" onClick={() => openEditor(repo)} disabled={!!busy || syncing}>
                     {open === repo.id ? 'Close' : 'Customize'}
                   </Btn>
-                  <Btn variant="ghost" size="sm" onClick={() => remove(repo)} aria-label={`Remove ${repo.name}`} className="hover:text-destructive">
+                  <Btn variant="ghost" size="sm" onClick={() => remove(repo)} disabled={!!busy || syncing} aria-label={`Remove ${repo.name}`} className="hover:text-destructive">
                     <Trash2 className="h-3.5 w-3.5" />
                   </Btn>
                 </div>
@@ -265,7 +298,7 @@ export function GitHubPanel() {
                     <Btn variant="ghost" onClick={() => setOpen(null)}>
                       Cancel
                     </Btn>
-                    <Btn onClick={() => saveDraft(repo)} busy={busy === repo.id}>
+                    <Btn onClick={() => saveDraft(repo)} busy={busy === repo.id} disabled={syncing || !!busy}>
                       Save
                     </Btn>
                   </div>

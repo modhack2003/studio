@@ -2,7 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 import {
   GitHubAPI,
   extractReadmeExcerpt,
-  fetchReadme,
+  GitHubError,
   parseGitHubUsername,
   type GitHubRepository,
 } from '@/lib/github';
@@ -39,7 +39,11 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
 }
 
 export async function resolveGitHubUsername(prisma: PrismaClient, explicit?: string | null) {
-  if (explicit && parseGitHubUsername(explicit)) return parseGitHubUsername(explicit)!;
+  if (explicit?.trim()) {
+    const name = parseGitHubUsername(explicit);
+    if (!name) throw new GitHubError('Enter a valid GitHub username or github.com profile URL.', 400);
+    return name;
+  }
   const personal = await prisma.personalData.findFirst({ select: { github: true } });
   return (
     parseGitHubUsername(personal?.github) ||
@@ -110,17 +114,25 @@ export async function syncGitHub(
 
   /* ---- repositories ----------------------------------------------------- */
   const existing = await prisma.gitHubRepository.findMany({
-    select: { id: true, githubId: true, fullName: true, customDescription: true },
+    select: { id: true, githubId: true, fullName: true, updatedAt: true, readmeCheckedAt: true, readmeExcerpt: true },
   });
   const byGithubId = new Map(existing.map((r) => [r.githubId, r]));
+  const byFullName = new Map(existing.map((r) => [r.fullName.toLowerCase(), r]));
 
   await mapLimit(publicRepos, 6, async (repo: GitHubRepository) => {
     try {
       const isProfileRepo = repo.name.toLowerCase() === username.toLowerCase();
-      let readmeExcerpt: string | null = null;
-      if (!repo.description && !isProfileRepo) {
-        const md = await fetchReadme(repo.full_name, repo.default_branch);
-        readmeExcerpt = md ? extractReadmeExcerpt(md, repo.name) : null;
+      const found = byGithubId.get(repo.id) ?? byFullName.get(repo.full_name.toLowerCase());
+      let readmeCheckedAt = found?.readmeCheckedAt ?? null;
+      let readmeExcerpt: string | null = found?.readmeExcerpt ?? null;
+      if (!repo.description && !isProfileRepo && (!found || found.updatedAt.getTime() !== new Date(repo.updated_at).getTime() || !found.readmeCheckedAt || Date.now() - found.readmeCheckedAt.getTime() > 7 * 86400000)) {
+        try {
+          const md = await api.getReadme(repo.full_name);
+          readmeCheckedAt = new Date();
+          readmeExcerpt = md ? extractReadmeExcerpt(md, repo.name) : null;
+        } catch {
+          // Keep the saved excerpt when an optional README request fails.
+        }
         if (readmeExcerpt) result.readmeExcerpts++;
       }
 
@@ -147,11 +159,11 @@ export async function syncGitHub(
         license: repo.license?.name ?? null,
         fork: repo.fork,
         readmeExcerpt,
+        readmeCheckedAt,
         syncedAt: new Date(),
         lastChecked: new Date(),
       };
 
-      const found = byGithubId.get(repo.id);
       if (found) {
         await prisma.gitHubRepository.update({ where: { id: found.id }, data });
         result.updated++;
@@ -162,7 +174,7 @@ export async function syncGitHub(
           data: {
             ...data,
             customTags: [],
-            displayInPortfolio: !repo.fork && !repo.archived && !isProfileRepo,
+            displayInPortfolio: !repo.fork && !repo.archived && !repo.disabled && !isProfileRepo,
           },
         });
         result.created++;
@@ -174,7 +186,7 @@ export async function syncGitHub(
 
   if (result.errors.length === 0) {
     const liveIds = publicRepos.map((r) => r.id);
-    const removed = await prisma.gitHubRepository.deleteMany({ where: { githubId: { notIn: liveIds } } });
+    const removed = await prisma.gitHubRepository.deleteMany({ where: { fullName: { startsWith: `${user.login}/`, mode: 'insensitive' }, githubId: { notIn: liveIds } } });
     result.removed = removed.count;
   }
 

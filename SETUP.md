@@ -8,6 +8,7 @@ Copy `.env.example` to `.env` and fill it in (on Vercel: *Settings → Environme
 | `DATABASE_URL` | yes | MongoDB Atlas URI **including the database name** (`…mongodb.net/portfolio?…`). URL-encode special characters in the password (`@` → `%40`). |
 | `ADMIN_PIN` | yes (first login) | 6–12 digits. After logging in, change it in **Admin → Security** — the new PIN is stored hashed in MongoDB and `ADMIN_PIN` stops working. |
 | `GITHUB_TOKEN` | no | Read-only token; raises GitHub's rate limit for the sync. |
+| `CRON_SECRET` | for scheduled sync | Random production secret authenticating the daily GitHub refresh. |
 | `GITHUB_USERNAME` | no | Fallback if the profile has no GitHub URL (default `modhack2003`). |
 | `BLOB_READ_WRITE_TOKEN` | no | Only for uploading a resume PDF (Vercel Blob). You can paste a resume link instead. |
 
@@ -29,7 +30,7 @@ npm run dev            # http://localhost:9002
 **Forgot the PIN?** Delete the document in the `AdminCredential` collection (Atlas → Browse Collections); login falls back to `ADMIN_PIN`.
 
 ## 4. Content
-- **GitHub → Sync now** pulls your avatar, location and every public repo. New repos (not forks/archived) are shown automatically; toggle, pin or rename them in the same tab. Repos without a description use the first paragraph of their README. The site shows pinned + the 5 latest repos, with a "show all" button.
+- **GitHub → Sync now** pulls your avatar, location and every public repo. New repos (not forks/archived) are shown automatically; toggle, pin or rename them in the same tab. Repos without a description use the first paragraph of their README. The site shows every pinned repo plus the 5 latest unpinned repos, with a "show all" button. Hidden repos remain hidden across syncs. Opening the GitHub admin tab refreshes data older than six hours; `vercel.json` also schedules a daily production refresh at 04:00 UTC (Vercel timing can vary). Set `CRON_SECRET` in production before deploying. Syncs share a database lease and preserve custom repo settings; automatic runs do not overwrite profile fields.
   CLI alternative: `npm run github:sync`.
 - **LinkedIn import:** LinkedIn blocks automated reads, so request your data export (*Settings & Privacy → Data privacy → Get a copy of your data*) and drop the `.zip` in **Admin → LinkedIn import**. It previews first; nothing is saved until you press *Import now*. Imports profile headline/summary, experience, education, certifications, projects and skills.
 - **Inbox:** contact-form messages are stored in MongoDB (rate-limited, with a honeypot).

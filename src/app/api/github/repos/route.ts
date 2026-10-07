@@ -11,12 +11,16 @@ export async function GET(request: NextRequest) {
   const denied = await requireAdminSession(request);
   if (denied) return denied;
   try {
-    const repositories = sortRepos(await prisma.gitHubRepository.findMany({ orderBy: { pushedAt: 'desc' } }));
+    const [rows, state] = await Promise.all([
+      prisma.gitHubRepository.findMany({ orderBy: { pushedAt: 'desc' } }),
+      prisma.gitHubSyncState.findUnique({ where: { id: 'github' } }),
+    ]);
+    const repositories = sortRepos(rows);
     const visible = repositories.filter((r) => r.displayInPortfolio).length;
     const lastSync = repositories.reduce<Date | null>((acc, r) => (!acc || r.syncedAt > acc ? r.syncedAt : acc), null);
     return NextResponse.json({
       repositories,
-      stats: { total: repositories.length, visible, lastSync },
+      stats: { total: repositories.length, visible, lastSync: state?.lastSuccess ?? lastSync, lastError: state?.lastError ?? null, syncing: !!state?.lockedUntil && state.lockedUntil > new Date() },
     });
   } catch (error) {
     return handleError(error, 'Repositories');
