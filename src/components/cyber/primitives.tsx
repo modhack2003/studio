@@ -124,17 +124,30 @@ export function Marquee({
   itemClassName,
   reverse = false,
   separator = '•',
+  pixelsPerSecond,
 }: {
   items: string[];
   className?: string;
   itemClassName?: string;
   reverse?: boolean;
   separator?: ReactNode;
+  pixelsPerSecond?: number;
 }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [duration, setDuration] = useState<number | null>(null);
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || !pixelsPerSecond || pixelsPerSecond <= 0) return;
+    const measure = () => setDuration(track.scrollWidth / 2 / pixelsPerSecond);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(track);
+    return () => observer.disconnect();
+  }, [pixelsPerSecond, items]);
   const list = [...items, ...items];
   return (
-    <div className={cn('relative overflow-hidden', className)}>
-      <div className={cn('flex w-max items-center whitespace-nowrap', reverse ? 'animate-marquee-rev' : 'animate-marquee')}>
+    <div className={cn('relative overflow-hidden', pixelsPerSecond && 'marquee-container', className)}>
+      <div ref={trackRef} style={pixelsPerSecond ? { animationDuration: duration ? `${duration}s` : undefined, animationPlayState: duration ? undefined : 'paused' } : undefined} className={cn('marquee-track flex w-max items-center whitespace-nowrap', reverse ? 'animate-marquee-rev' : 'animate-marquee')}>
         {list.map((item, i) => (
           <span key={`${item}-${i}`} className={cn('flex items-center gap-6 px-3', itemClassName)}>
             {item}
