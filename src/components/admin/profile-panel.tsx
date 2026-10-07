@@ -38,11 +38,15 @@ export function ProfilePanel() {
   const [profile, setProfile] = useState<Profile>(EMPTY);
   const [exists, setExists] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reload, setReload] = useState(0);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    setLoading(true);
+    setLoadError(false);
     api<Record<string, unknown> | null>('/api/personal-data')
       .then((data) => {
         if (data) {
@@ -57,14 +61,18 @@ export function ProfilePanel() {
           );
         }
       })
-      .catch((e) => toast({ title: 'Could not load profile', description: errorMessage(e), variant: 'destructive' }))
+      .catch((e) => {
+        setLoadError(true);
+        toast({ title: 'Could not load profile', description: errorMessage(e), variant: 'destructive' });
+      })
       .finally(() => setLoading(false));
-  }, [toast]);
+  }, [toast, reload]);
 
   const set = (k: keyof Profile) => (e: { target: { value: string } }) => setProfile((p) => ({ ...p, [k]: e.target.value }));
 
   const save = async (e?: FormEvent) => {
     e?.preventDefault();
+    if (loading || loadError || saving) return;
     setSaving(true);
     try {
       await api('/api/personal-data', { method: 'PUT', body: profile });
@@ -92,6 +100,12 @@ export function ProfilePanel() {
       if (fileRef.current) fileRef.current.value = '';
     }
   };
+
+  if (loadError) return (
+    <Panel title="Profile" description="Could not load your profile. Retry before editing.">
+      <Btn variant="outline" onClick={() => setReload((value) => value + 1)}>Retry loading</Btn>
+    </Panel>
+  );
 
   if (loading) return <Panel title="Profile">loading…</Panel>;
 
