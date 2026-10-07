@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { organizeSkills } from '@/lib/skill-groups';
 import { prisma } from '@/lib/prisma';
 import { requireAdminSession } from '@/lib/admin-auth';
 import { handleError, jsonError, readJson, revalidatePublic } from '@/lib/api';
@@ -22,10 +23,11 @@ export async function PUT(request: NextRequest) {
   if (!parsed.success) return jsonError(zodMessage(parsed.error), 400);
 
   try {
+    const data = organizeSkills(parsed.data);
     const existing = await prisma.skill.findFirst({ select: { id: true } });
     const saved = existing
-      ? await prisma.skill.update({ where: { id: existing.id }, data: parsed.data })
-      : await prisma.skill.create({ data: parsed.data });
+      ? await prisma.skill.update({ where: { id: existing.id }, data })
+      : await prisma.skill.create({ data });
     revalidatePublic();
     return NextResponse.json(saved);
   } catch (error) {

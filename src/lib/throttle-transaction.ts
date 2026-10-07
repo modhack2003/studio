@@ -10,7 +10,7 @@ const MAX_ATTEMPTS = 8;
  * Callbacks must only perform transactional database work (no external effects).
  */
 export async function throttleTransaction<T>(
-  scope: 'admin-login' | 'contact',
+  scope: 'admin-login' | 'contact' | 'engagement',
   work: (tx: Prisma.TransactionClient) => Promise<T>
 ): Promise<T> {
   for (let attempt = 0; ; attempt++) {

@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   const body = (await readJson(request)) as
     | { files?: Record<string, unknown>; dryRun?: unknown; overwriteProfile?: unknown }
     | undefined;
-  if (!body?.files || typeof body.files !== 'object') return jsonError('No LinkedIn files received.', 400);
+  if (!body?.files || typeof body.files !== 'object' || Array.isArray(body.files)) return jsonError('No LinkedIn files received.', 400);
 
   const files: Record<string, string> = {};
   let total = 0;
@@ -31,22 +31,26 @@ export async function POST(request: NextRequest) {
   }
   if (total > MAX_TOTAL_CHARS) return jsonError('Files are too large.', 413);
 
-  const parsed = parseLinkedInExport(files);
-  if (parsed.filesFound.length === 0) {
-    return jsonError(
-      'None of the expected files were found (Profile.csv, Positions.csv, Education.csv, Skills.csv, Certifications.csv, Projects.csv).',
-      400
-    );
-  }
-
   try {
-    const summary = await importLinkedIn(prisma, parsed, {
+    const parsed = parseLinkedInExport(files);
+    if (parsed.filesFound.length === 0) {
+      return jsonError(
+        'None of the expected files were found (Profile.csv, Positions.csv, Education.csv, Skills.csv, Certifications.csv, Projects.csv).',
+        400
+      );
+    }
+    const options = {
       dryRun: body.dryRun === true,
       overwriteProfile: body.overwriteProfile !== false,
-    });
+    };
+    // A preview never writes; a real import commits all sections together.
+    const summary = options.dryRun
+      ? await importLinkedIn(prisma, parsed, options)
+      : await prisma.$transaction((tx) => importLinkedIn(tx, parsed, options), { timeout: 45_000 });
     if (!summary.dryRun) revalidatePublic();
     return NextResponse.json({ success: true, summary });
   } catch (error) {
+    if (error instanceof SyntaxError) return jsonError(error.message, 400);
     return handleError(error, 'LinkedIn import');
   }
 }

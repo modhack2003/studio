@@ -15,12 +15,17 @@ async function main() {
   const { prisma } = await import('../src/lib/prisma');
   const { checkAdminPin } = await import('../src/lib/admin-auth');
   const { throttleTransaction } = await import('../src/lib/throttle-transaction');
+  const { POST: engagement } = await import('../src/app/api/engagements/route');
+  const { importLinkedIn, parseLinkedInExport } = await import('../src/lib/linkedin-import');
   const { POST: contact } = await import('../src/app/api/contact/route');
   const { NextRequest } = await import('next/server');
 
   const clear = async () => {
     await prisma.loginAttempt.deleteMany();
     await prisma.contactMessage.deleteMany();
+    await prisma.engagement.deleteMany();
+    await prisma.experience.deleteMany();
+    await prisma.skill.deleteMany();
     await prisma.adminCredential.deleteMany();
     await prisma.throttleGuard.deleteMany();
   };
@@ -72,7 +77,45 @@ async function main() {
       throw new Error('rollback test');
     }), /rollback test/);
     assert.equal(await prisma.contactMessage.count(), 60, 'failed transactions must roll back');
-    console.log('PASS: concurrent per-IP/global login and contact limits, lockout, success reset, expiry, rollback.');
+    await clear();
+    const sendEngagement = (ip: string) => engagement(new NextRequest('http://localhost/api/engagements', {
+      method: 'POST', headers: { 'content-type': 'application/json', 'x-real-ip': ip },
+      body: JSON.stringify({ kind: 'bounty', name: 'Test User', email: 'test@example.com', company: 'Test Company', message: 'A concurrency test invite.' }),
+    }));
+    const invites = await Promise.all(Array.from({ length: 12 }, () => sendEngagement('test-ip')));
+    assert.equal(invites.filter((r) => r.status === 201).length, 4, 'only four same-IP engagement requests accepted');
+    assert.equal(await prisma.engagement.count(), 4);
+    await clear();
+    await prisma.engagement.createMany({ data: Array.from({ length: 39 }, (_, i) => ({
+      kind: 'bounty', name: 'Test User', email: 'test@example.com', message: 'seed', services: [], ipHash: `seed-${i}`,
+    })) });
+    const globalInvites = await Promise.all(Array.from({ length: 12 }, (_, i) => sendEngagement(`parallel-${i}`)));
+    assert.equal(globalInvites.filter((r) => r.status === 201).length, 1, 'only one global engagement slot remains');
+    assert.equal(await prisma.engagement.count(), 40);
+
+    await clear();
+    const exported = parseLinkedInExport({
+      'Positions.csv': 'Company Name,Title,Started On\nExample,Engineer,Jan 2023\nExample,Engineer,Jan 2023',
+      'Skills.csv': 'Name\nPython (Programming Language)\nReact.js\nNetwork Security',
+    });
+    const preview = await importLinkedIn(prisma, exported, { dryRun: true });
+    assert.equal(await prisma.experience.count(), 0, 'preview never writes');
+    await assert.rejects(prisma.$transaction(async (tx) => {
+      await importLinkedIn(tx, exported);
+      throw new Error('import rollback test');
+    }), /import rollback test/);
+    assert.equal(await prisma.experience.count(), 0, 'failed imports roll back experience');
+    assert.equal(await prisma.skill.count(), 0, 'failed imports roll back skills');
+    const saved = await prisma.$transaction((tx) => importLinkedIn(tx, exported));
+    assert.deepEqual(saved.experience, preview.experience);
+    assert.equal(await prisma.experience.count(), 1, 'duplicate rows produce one role');
+    await prisma.$transaction((tx) => importLinkedIn(tx, exported));
+    assert.equal(await prisma.experience.count(), 1, 're-import does not duplicate roles');
+    const skills = await prisma.skill.findFirst();
+    assert.deepEqual(skills?.languages, ['Python']);
+    assert.deepEqual(skills?.tools, ['React']);
+    assert.deepEqual(skills?.areas, ['Network Security']);
+    console.log('PASS: concurrent per-IP/global login and contact limits, lockout, success reset, expiry, rollback; engagement limits and atomic LinkedIn imports.');
   } finally {
     await clear();
     await prisma.$disconnect();

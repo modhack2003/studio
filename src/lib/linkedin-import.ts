@@ -1,4 +1,5 @@
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
+import { organizeSkills } from '@/lib/skill-groups';
 
 /**
  * Imports the CSV files from a LinkedIn "Get a copy of your data" export.
@@ -41,6 +42,7 @@ export function parseCsv(text: string): string[][] {
       field = '';
     } else field += c;
   }
+  if (inQuotes) throw new SyntaxError('The CSV contains an unclosed quoted field. Please export it again.');
   if (field !== '' || row.length) {
     row.push(field);
     rows.push(row);
@@ -212,10 +214,10 @@ export interface ImportSummary {
   dryRun: boolean;
 }
 
-const key = (...parts: (string | null | undefined)[]) => parts.map((p) => (p ?? '').trim().toLowerCase()).join('|');
+const key = (...parts: (string | null | undefined)[]) => JSON.stringify(parts.map((p) => (p ?? '').trim().toLowerCase()));
 
 export async function importLinkedIn(
-  prisma: PrismaClient,
+  prisma: Prisma.TransactionClient,
   parsed: ParsedLinkedIn,
   opts: { dryRun?: boolean; overwriteProfile?: boolean } = {}
 ): Promise<ImportSummary> {
@@ -267,7 +269,9 @@ export async function importLinkedIn(
   if (parsed.positions.length) {
     const existing = await prisma.experience.findMany();
     const byKey = new Map(existing.map((e) => [key(e.company, e.role, e.startDate?.toISOString().slice(0, 7)), e]));
-    for (const pos of parsed.positions) {
+    // Last row wins for repeated export records; preview and save use the same set.
+    const positions = new Map(parsed.positions.map((pos) => [key(pos.company, pos.role, pos.startDate?.toISOString().slice(0, 7)), pos]));
+    for (const pos of positions.values()) {
       const k = key(pos.company, pos.role, pos.startDate?.toISOString().slice(0, 7));
       const data = {
         company: pos.company,
@@ -302,6 +306,7 @@ export async function importLinkedIn(
       }
       summary.education.created++;
       keys.add(key(edu.institution, edu.degree));
+      institutions.add(key(edu.institution));
       if (!dry) await prisma.education.create({ data: edu });
     }
   }
@@ -310,7 +315,8 @@ export async function importLinkedIn(
   if (parsed.certifications.length) {
     const existing = await prisma.certificate.findMany();
     const byName = new Map(existing.map((c) => [key(c.name), c]));
-    for (const cert of parsed.certifications) {
+    const certifications = new Map(parsed.certifications.map((cert) => [key(cert.name), cert]));
+    for (const cert of certifications.values()) {
       const found = byName.get(key(cert.name));
       if (found) {
         summary.certificates.updated++;
@@ -341,22 +347,16 @@ export async function importLinkedIn(
     }
   }
 
-  /* skills → "Areas of Expertise" (deduped against every list) */
+  /* skills → existing categories, with known languages/tools classified */
   if (parsed.skills.length) {
     const skill = await prisma.skill.findFirst();
-    const known = new Set(
-      [...(skill?.languages ?? []), ...(skill?.tools ?? []), ...(skill?.areas ?? [])].map((s) => s.toLowerCase())
-    );
-    const additions = parsed.skills.filter((s) => {
-      const k = s.toLowerCase();
-      if (known.has(k)) return false;
-      known.add(k);
-      return true;
-    });
-    summary.skills.added = additions.length;
-    if (!dry && additions.length) {
-      if (skill) await prisma.skill.update({ where: { id: skill.id }, data: { areas: [...skill.areas, ...additions] } });
-      else await prisma.skill.create({ data: { languages: [], tools: [], areas: additions } });
+    const before = organizeSkills({ languages: skill?.languages ?? [], tools: skill?.tools ?? [], areas: skill?.areas ?? [] });
+    const grouped = organizeSkills({ ...before, areas: [...before.areas, ...parsed.skills] });
+    const count = (groups: typeof grouped) => groups.languages.length + groups.tools.length + groups.areas.length;
+    summary.skills.added = count(grouped) - count(before);
+    if (!dry) {
+      if (skill) await prisma.skill.update({ where: { id: skill.id }, data: grouped });
+      else if (count(grouped)) await prisma.skill.create({ data: grouped });
     }
   }
 
