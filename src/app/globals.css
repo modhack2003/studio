@@ -221,27 +221,40 @@
 .marquee-container:hover .marquee-track,
 .marquee-container:focus-within .marquee-track { animation-play-state: paused; }
 
-/* Crow silhouettes scatter once as each new 404 thought appears. */
+/* Crow flight, feather drift, and a two-stage quote handoff. */
 @keyframes crow-flight {
-  0% { opacity: 0; transform: translate(0, 12px) scale(0.35); }
-  18% { opacity: 1; }
-  100% { opacity: 0; transform: translate(var(--crow-x), var(--crow-y)) rotate(var(--crow-turn)) scale(0.8); }
+  0% { opacity: 0; transform: translate(0, 12px) scale(0.3); }
+  12% { opacity: 1; }
+  40% { opacity: 0.95; transform: translate(var(--crow-mid-x), var(--crow-mid-y)) rotate(-8deg) scale(var(--crow-scale)); }
+  100% { opacity: 0; transform: translate(var(--crow-x), var(--crow-y)) rotate(var(--crow-turn)) scale(0.45); }
 }
 @keyframes crow-wings {
-  from { transform: scaleY(1) rotate(-6deg); }
-  to { transform: scaleY(0.35) rotate(6deg); }
+  from { transform: scaleY(1) rotate(-8deg); }
+  to { transform: scaleY(0.4) rotate(8deg); }
+}
+@keyframes feather-drift {
+  0% { opacity: 0; transform: translate(0, 0) rotate(-20deg); }
+  20% { opacity: 0.8; }
+  100% { opacity: 0; transform: translate(var(--crow-x), var(--crow-y)) rotate(var(--crow-turn)); }
+}
+@keyframes quote-dissolve {
+  0% { opacity: 1; transform: translateY(0); filter: blur(0); }
+  35%, 100% { opacity: 0; transform: translateY(-8px); filter: blur(3px); }
 }
 @keyframes quote-materialize {
-  0%, 25% { opacity: 0; filter: blur(4px); transform: translateY(5px); }
+  0%, 35% { opacity: 0; filter: blur(3px); transform: translateY(10px); }
   100% { opacity: 1; filter: blur(0); transform: translateY(0); }
 }
-.crow-flight { color: hsl(var(--ink)); animation: crow-flight 1.2s ease-out both; }
-.crow-wings { animation: crow-wings 0.16s ease-in-out 8 alternate; }
-.quote-transition .quote-copy { animation: quote-materialize 1.1s ease-out both; }
-html.safe-mode .crow-scatter { display: none; }
+.crow-flight { color: hsl(var(--ink)); animation: crow-flight 1.6s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.crow-wings { animation: crow-wings var(--wing-speed, 0.18s) ease-in-out 10 alternate; }
+.crow-feather { animation: feather-drift 1.8s ease-out both; }
+.quote-transition .quote-outgoing { animation: quote-dissolve 1.6s ease-out both; }
+.quote-transition .quote-copy { animation: quote-materialize 1.6s ease-out both; }
+html.safe-mode .crow-scatter,
+html.safe-mode .quote-outgoing { display: none; }
 html.safe-mode .quote-copy { animation: none; }
 @media (prefers-reduced-motion: reduce) {
-  .crow-scatter { display: none; }
+  .crow-scatter, .quote-outgoing { display: none; }
   .quote-transition .quote-copy { animation: none; }
 }
 

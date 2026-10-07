@@ -2,49 +2,14 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { NOT_FOUND_QUOTES, getQuoteClock, quoteIndexAt, QUOTE_INTERVAL_MS } from '@/lib/not-found-quotes';
-import { CrowScatter } from './crow-scatter';
+import { RotatingQuote } from './rotating-quote';
 
 const SharinganEye = dynamic(() => import('./sharingan').then((module) => module.SharinganEye), {
   ssr: false,
   loading: () => <div className="flex h-full items-center justify-center monofont text-[10px] uppercase tracking-[0.3em]">Opening eye…</div>,
 });
 
-// In-memory continuity for browsers that block storage.
-let fallbackAnchor: number | undefined;
-
 export function NotFoundScreen() {
-  const [quoteIndex, setQuoteIndex] = useState(0);
-  const [ready, setReady] = useState(false);
-  const [paused, setPaused] = useState(false);
-
-  useEffect(() => {
-    if (paused) return;
-    const now = Date.now();
-    let anchor: number;
-    try {
-      anchor = getQuoteClock(window.sessionStorage, now);
-    } catch {
-      fallbackAnchor ??= now;
-      anchor = fallbackAnchor;
-    }
-    let timer: ReturnType<typeof setTimeout>;
-    const update = () => {
-      clearTimeout(timer);
-      const current = Date.now();
-      setQuoteIndex(quoteIndexAt(anchor, current));
-      setReady(true);
-      timer = setTimeout(update, QUOTE_INTERVAL_MS - (Math.max(0, current - anchor) % QUOTE_INTERVAL_MS));
-    };
-    update();
-    document.addEventListener('visibilitychange', update);
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener('visibilitychange', update);
-    };
-  }, [paused]);
-
   return (
     <main className="relative overflow-hidden bg-ink text-bone">
       <div aria-hidden className="pointer-events-none absolute inset-0 grid-cross" />
@@ -73,17 +38,7 @@ export function NotFoundScreen() {
               <SharinganEye className="relative h-[280px] w-full sm:h-[360px] lg:h-[400px]" />
               <p className="relative border-t border-ink/40 px-5 py-4 monofont text-[10px] uppercase tracking-[0.2em]">Even this eye cannot locate your page.</p>
             </div>
-            <div className="relative mt-6 border-l-2 border-signal pl-5">
-              <p className="monofont text-[10px] uppercase tracking-[0.2em] text-signal">Intercepted thought // {String(quoteIndex + 1).padStart(2, '0')} / {NOT_FOUND_QUOTES.length}</p>
-              <div key={quoteIndex} className={ready ? 'quote-transition relative' : 'relative'}>
-                {ready && <CrowScatter />}
-                <blockquote className="quote-copy mt-3 min-h-[4.5rem] font-display text-lg leading-relaxed sm:text-xl">“{NOT_FOUND_QUOTES[quoteIndex]}”</blockquote>
-              </div>
-              <p className="mt-2 monofont text-[9px] uppercase tracking-[0.2em] text-bone/50">Original words // new thought every 10 seconds</p>
-              <button type="button" aria-pressed={paused} onClick={() => setPaused((value) => !value)} className="mt-3 border-b border-signal/40 py-1 monofont text-[10px] uppercase tracking-wider text-signal hover:text-bone focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-signal">
-                {paused ? 'Resume quotes' : 'Pause quotes'}
-              </button>
-            </div>
+            <div className="mt-6"><RotatingQuote /></div>
           </div>
         </div>
       </div>
