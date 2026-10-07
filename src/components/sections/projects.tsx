@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowUpRight, Star, GitFork, LayoutGrid, List } from 'lucide-react';
+import { selectRepoPreview } from '@/lib/repo-preview';
 import { cn } from '@/lib/utils';
 import { Reveal, TiltCard } from '@/components/cyber/primitives';
 import {
@@ -61,8 +62,6 @@ type Entry = {
   /** raw fields for the 3D object classifier — additive, nothing else reads it */
   signals: RepoObjectInput;
 };
-
-const INITIAL_REPOS = 5;
 
 function toEntries(projects: Project[], repos: GitHubRepository[]): Entry[] {
   const a: Entry[] = projects.map((p) => ({
@@ -232,13 +231,14 @@ export function ProjectsSection({ projects, githubRepos }: { projects: Project[]
   const all = useMemo(() => toEntries(projects, githubRepos), [projects, githubRepos]);
   const [showAll, setShowAll] = useState(false);
   const repoTotal = githubRepos.length;
-  const hiddenRepos = Math.max(0, repoTotal - INITIAL_REPOS);
-  // hand-picked projects always show; GitHub repos start with the 5 latest (pinned first)
+  const previewRepos = useMemo(() => selectRepoPreview(githubRepos), [githubRepos]);
+  const hiddenRepos = repoTotal - previewRepos.length;
+  // Hand-picked projects and every pinned repo remain reachable in the compact view.
   const entries = useMemo(() => {
     if (showAll) return all;
-    let repos = 0;
-    return all.filter((e) => e.kind === 'project' || repos++ < INITIAL_REPOS);
-  }, [all, showAll]);
+    const keys = new Set(previewRepos.map((repo) => `gh-${repo.id}`));
+    return all.filter((e) => e.kind === 'project' || keys.has(e.key));
+  }, [all, showAll, previewRepos]);
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [active, setActive] = useState(0);
   const current = entries[active];
@@ -453,7 +453,7 @@ export function ProjectsSection({ projects, githubRepos }: { projects: Project[]
               {showAll ? 'Show latest only' : `Show all ${repoTotal} repositories (+${hiddenRepos})`}
             </button>
             <span className="monofont text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-              {showAll ? `${repoTotal} repos from github` : `latest ${INITIAL_REPOS} of ${repoTotal} repos`}
+              {showAll ? `${repoTotal} repos from github` : `${previewRepos.length} of ${repoTotal} repos · pinned + recent`}
             </span>
           </div>
         )}

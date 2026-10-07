@@ -17,6 +17,7 @@ async function main() {
   const { throttleTransaction } = await import('../src/lib/throttle-transaction');
   const { POST: engagement } = await import('../src/app/api/engagements/route');
   const { importLinkedIn, parseLinkedInExport } = await import('../src/lib/linkedin-import');
+  const { refreshGitHub } = await import('../src/lib/github-refresh');
   const { POST: contact } = await import('../src/app/api/contact/route');
   const { NextRequest } = await import('next/server');
 
@@ -24,6 +25,8 @@ async function main() {
     await prisma.loginAttempt.deleteMany();
     await prisma.contactMessage.deleteMany();
     await prisma.engagement.deleteMany();
+    await prisma.gitHubSyncState.deleteMany();
+    await prisma.gitHubRepository.deleteMany();
     await prisma.experience.deleteMany();
     await prisma.skill.deleteMany();
     await prisma.adminCredential.deleteMany();
@@ -115,7 +118,34 @@ async function main() {
     assert.deepEqual(skills?.languages, ['Python']);
     assert.deepEqual(skills?.tools, ['React']);
     assert.deepEqual(skills?.areas, ['Network Security']);
-    console.log('PASS: concurrent per-IP/global login and contact limits, lockout, success reset, expiry, rollback; engagement limits and atomic LinkedIn imports.');
+    await clear();
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (input) => {
+      const url = String(input);
+      if (url.endsWith('/users/test-owner')) return new Response(JSON.stringify({ login: 'test-owner' }));
+      if (url.includes('/users/test-owner/repos?')) return new Response(JSON.stringify([{
+        id: 123, name: 'test-repo', full_name: 'test-owner/test-repo', description: 'Test repository description',
+        html_url: 'https://github.com/test-owner/test-repo', clone_url: 'https://github.com/test-owner/test-repo.git',
+        language: null, topics: [], stargazers_count: 0, forks_count: 0, created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z', pushed_at: '2024-01-01T00:00:00Z', size: 1, default_branch: 'main',
+        visibility: 'public', private: false, archived: false, disabled: false, fork: false, homepage: null, license: null,
+      }]));
+      throw new Error(`Unexpected external request: ${url}`);
+    };
+    try {
+      const refreshes = await Promise.all(Array.from({ length: 12 }, () => refreshGitHub(prisma, { username: 'test-owner', automatic: true })));
+      assert.equal(refreshes.filter((r) => !r.skipped).length, 1, 'only one concurrent automatic sync runs');
+      assert.equal(await prisma.gitHubRepository.count(), 1);
+      const state = await prisma.gitHubSyncState.findUnique({ where: { id: 'github' } });
+      assert(state?.lastSuccess, 'successful sync records freshness');
+      assert.equal(state.lockToken, null, 'successful sync releases its lease');
+      assert.equal((await refreshGitHub(prisma, { username: 'test-owner', automatic: true })).skipped, true, 'fresh data does not refetch');
+      await prisma.gitHubSyncState.update({ where: { id: 'github' }, data: { lastSuccess: null, lastAttempt: null, lockToken: 'expired', lockedUntil: new Date(0) } });
+      assert.equal((await refreshGitHub(prisma, { username: 'test-owner', automatic: true })).skipped, false, 'expired leases recover');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+    console.log('PASS: concurrent per-IP/global login and contact limits, lockout, success reset, expiry, rollback; engagement limits, atomic LinkedIn imports, concurrent GitHub refresh, freshness and expired-lease recovery.');
   } finally {
     await clear();
     await prisma.$disconnect();

@@ -103,6 +103,7 @@ model GitHubRepository {
   homepage        String?
   license         String?
   fork            Boolean?
+  readmeCheckedAt DateTime?
   readmeExcerpt   String? // first paragraph of the README, used when there is no description
 
   // Portfolio display settings
@@ -234,4 +235,15 @@ model LoginAttempt {
 model ThrottleGuard {
   id      String @id @map("_id")
   version Int    @default(0)
+}
+
+/// Singleton sync lease and last successful refresh, shared across instances.
+model GitHubSyncState {
+  id          String    @id @map("_id")
+  username    String?
+  lastSuccess DateTime?
+  lastAttempt DateTime?
+  lastError   String?
+  lockedUntil DateTime?
+  lockToken   String?
 }

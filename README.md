@@ -247,6 +247,7 @@ The admin console, first login and day‑to‑day content workflow are covered i
 | `DATABASE_URL` | ✅ | Atlas URI **including the database name** (`…mongodb.net/portfolio?…`). URL‑encode special characters in the password. |
 | `ADMIN_PIN` | ✅ first login | 6–12 digits. After you log in, set a new PIN in **Security**. It is stored hashed and this variable is then ignored. |
 | `GITHUB_TOKEN` | – | Read‑only token that raises GitHub's rate limit for the sync. |
+| `CRON_SECRET` | for scheduled sync | Random production secret authenticating the daily GitHub refresh. |
 | `GITHUB_USERNAME` | – | Fallback when the profile has no GitHub URL (`modhack2003`). |
 | `BLOB_READ_WRITE_TOKEN` | – | Only needed to upload a résumé PDF. Pasting a link works too. |
 

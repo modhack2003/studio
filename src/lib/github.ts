@@ -93,32 +93,26 @@ export class GitHubAPI {
         `/users/${encodeURIComponent(username)}/repos?type=owner&sort=pushed&direction=desc&per_page=${perPage}&page=${page}`
       );
       all.push(...batch);
-      if (batch.length < perPage) break;
+      if (batch.length < perPage) return all;
     }
-    return all;
+    throw new GitHubError('Repository list is too large for one sync; no repositories were removed.', 422);
+  }
+
+  async getReadme(fullName: string): Promise<string | null> {
+    try {
+      const path = fullName.split('/').map(encodeURIComponent).join('/');
+      const file = await this.request<{ content?: string; encoding?: string }>(`/repos/${path}/readme`);
+      return file.encoding === 'base64' && file.content ? Buffer.from(file.content, 'base64').toString('utf8') : null;
+    } catch (error) {
+      if (error instanceof GitHubError && error.status === 404) return null;
+      throw error;
+    }
   }
 }
 
 /* -------------------------------------------------------------------------- */
 /* README excerpt                                                              */
 /* -------------------------------------------------------------------------- */
-const README_NAMES = ['README.md', 'readme.md', 'Readme.md', 'README.MD', 'README'];
-
-export async function fetchReadme(fullName: string, branch: string): Promise<string | null> {
-  for (const file of README_NAMES) {
-    try {
-      const res = await fetch(`https://raw.githubusercontent.com/${fullName}/${encodeURIComponent(branch)}/${file}`, {
-        cache: 'no-store',
-        signal: AbortSignal.timeout(6000),
-      });
-      if (res.ok) return await res.text();
-    } catch {
-      // try next candidate
-    }
-  }
-  return null;
-}
-
 function cleanInline(text: string): string {
   return text
     .replace(/!\[[^\]]*\]\([^)]*\)/g, '') // images
@@ -199,8 +193,14 @@ export function extractReadmeExcerpt(markdown: string, repoName?: string): strin
 export function parseGitHubUsername(input: string | null | undefined): string | null {
   if (!input) return null;
   const s = input.trim();
-  const m = s.match(/github\.com\/([A-Za-z0-9-]{1,39})(?:[/?#]|$)/i);
-  if (m) return m[1];
-  if (/^[A-Za-z0-9-]{1,39}$/.test(s)) return s;
-  return null;
+  const valid = (name: string) => /^(?!-)(?!.*--)[A-Za-z0-9-]{1,39}(?<!-)$/.test(name);
+  if (valid(s)) return s;
+  try {
+    const url = new URL(s);
+    if (!['https:', 'http:'].includes(url.protocol) || url.hostname.toLowerCase() !== 'github.com' || url.username || url.password) return null;
+    const name = url.pathname.split('/')[1];
+    return valid(name) ? name : null;
+  } catch {
+    return null;
+  }
 }

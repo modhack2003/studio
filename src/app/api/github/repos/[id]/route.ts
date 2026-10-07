@@ -27,7 +27,7 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
   }
 }
 
-/** DELETE — removes the repo from the database (it comes back, hidden, on the next sync only if still on GitHub). */
+/** DELETE — removes the repo from the database (it comes back with default visibility on the next sync if still on GitHub). */
 export async function DELETE(request: NextRequest, { params }: Ctx) {
   const denied = await requireAdminSession(request);
   if (denied) return denied;
