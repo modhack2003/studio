@@ -1,3 +1,7 @@
+'use client';
+
+import { useState } from 'react';
+import { organizeSkills } from '@/lib/skill-groups';
 import { Code, Terminal, BrainCircuit } from 'lucide-react';
 import { Marquee, Reveal, TiltCard } from '@/components/cyber/primitives';
 
@@ -8,7 +12,9 @@ interface Skills {
 }
 
 export function SkillsSection({ skills }: { skills: Skills | null }) {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   if (!skills) return null;
+  skills = organizeSkills(skills);
 
   const skillSections = [
     { title: 'Languages', jp: '言語', code: 'LNG', icon: Code, items: skills.languages },
@@ -18,6 +24,7 @@ export function SkillsSection({ skills }: { skills: Skills | null }) {
   if (skillSections.length === 0) return null;
   const cols = skillSections.length === 1 ? 'md:grid-cols-1 max-w-xl' : skillSections.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3';
 
+  const visibleLimit = 6;
   const all = [...skills.languages, ...skills.tools, ...skills.areas];
 
   return (
@@ -45,22 +52,33 @@ export function SkillsSection({ skills }: { skills: Skills | null }) {
                   </span>
                 </div>
 
-                <ul className="space-y-1.5" style={{ transform: 'translateZ(24px)' }}>
-                  {section.items.map((skill, i) => (
+                <ul id={`arsenal-${section.code}`} className="space-y-1.5" style={{ transform: 'translateZ(24px)' }}>
+                  {(expanded[section.code] ? section.items : section.items.slice(0, visibleLimit)).map((skill, i) => (
                     <li
                       key={skill}
-                      className="group flex items-center justify-between border-b border-signal/20 py-1.5 text-sm text-bone/90 transition-colors hover:text-signal"
+                      className="group flex items-center gap-2 justify-between border-b border-signal/20 py-1.5 text-sm text-bone/90 transition-colors hover:text-signal"
                     >
-                      <span className="flex items-center gap-3">
-                        <span className="monofont text-[10px] text-muted-foreground">{String(i + 1).padStart(2, '0')}</span>
-                        {skill}
+                      <span className="flex min-w-0 items-start gap-3">
+                        <span className="monofont shrink-0 pt-0.5 text-[10px] text-muted-foreground">{String(i + 1).padStart(2, '0')}</span>
+                        <span className="min-w-0 break-words">{skill}</span>
                       </span>
-                      <span aria-hidden className="monofont text-[10px] opacity-0 transition-opacity group-hover:opacity-100">
+                      <span aria-hidden className="hidden shrink-0 monofont text-[10px] opacity-0 xl:inline transition-opacity group-hover:opacity-100">
                         [equipped]
                       </span>
                     </li>
                   ))}
                 </ul>
+                {section.items.length > visibleLimit && (
+                  <button
+                    type="button"
+                    aria-expanded={!!expanded[section.code]}
+                    aria-controls={`arsenal-${section.code}`}
+                    onClick={() => setExpanded((previous) => ({ ...previous, [section.code]: !previous[section.code] }))}
+                    className="mt-4 w-full border border-signal/30 px-3 py-2 monofont text-xs uppercase tracking-wider text-signal transition-colors hover:bg-signal/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-signal"
+                  >
+                    {expanded[section.code] ? 'Show less' : `Show all ${section.items.length} (+${section.items.length - visibleLimit})`}
+                  </button>
+                )}
               </div>
             </TiltCard>
           </Reveal>

@@ -24,15 +24,23 @@ interface Summary {
 async function readFiles(list: FileList): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
   for (const file of Array.from(list)) {
+    if (file.size > 50_000_000) throw new Error('Export is too large. Choose the individual profile CSV files instead.');
     const lower = file.name.toLowerCase();
     if (lower.endsWith('.zip')) {
       const entries = unzipSync(new Uint8Array(await file.arrayBuffer()), {
-        filter: (f) => WANTED.includes(f.name.split('/').pop()!.toLowerCase()),
+        filter: (f) => {
+          const wanted = WANTED.includes(f.name.split('/').pop()!.toLowerCase());
+          if (wanted && f.originalSize > 3_000_000) throw new Error('A profile CSV is too large to import.');
+          return wanted;
+        },
       });
       for (const [name, bytes] of Object.entries(entries)) out[name.split('/').pop()!] = strFromU8(bytes);
     } else if (WANTED.includes(lower)) {
       out[file.name] = await file.text();
     }
+  }
+  if (Object.values(out).reduce((total, value) => total + value.length, 0) > 3_000_000) {
+    throw new Error('Profile files are too large to import.');
   }
   return out;
 }
@@ -46,13 +54,14 @@ export function ImportPanel() {
   const [result, setResult] = useState<Summary | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const run = async (dryRun: boolean, data = files) => {
+  const run = async (dryRun: boolean, data = files, overwriteProfile = overwrite) => {
     if (!data) return;
     setBusy(true);
+    if (dryRun) setPreview(null);
     try {
       const { summary } = await api<{ summary: Summary }>('/api/import/linkedin', {
         method: 'POST',
-        body: { files: data, dryRun, overwriteProfile: overwrite },
+        body: { files: data, dryRun, overwriteProfile },
       });
       if (dryRun) setPreview(summary);
       else {
@@ -68,7 +77,9 @@ export function ImportPanel() {
   };
 
   const onPick = async (list: FileList | null) => {
-    if (!list?.length) return;
+    if (!list?.length || busy) return;
+    setBusy(true);
+    setFiles(null);
     setResult(null);
     setPreview(null);
     try {
@@ -82,6 +93,7 @@ export function ImportPanel() {
     } catch (e) {
       toast({ title: 'Could not open the file', description: errorMessage(e), variant: 'destructive' });
     } finally {
+      setBusy(false);
       if (inputRef.current) inputRef.current.value = '';
     }
   };
@@ -109,12 +121,15 @@ export function ImportPanel() {
       </ol>
 
       <div className="flex flex-wrap items-center gap-4">
-        <input ref={inputRef} type="file" multiple accept=".zip,.csv" className="hidden" onChange={(e) => onPick(e.target.files)} />
-        <Btn variant="outline" onClick={() => inputRef.current?.click()} busy={busy && !preview}>
+        <input ref={inputRef} type="file" multiple disabled={busy} accept=".zip,.csv" className="hidden" onChange={(e) => onPick(e.target.files)} />
+        <Btn variant="outline" onClick={() => inputRef.current?.click()} disabled={busy} busy={busy && !preview}>
           <FileArchive className="h-3.5 w-3.5" /> Choose export (.zip / .csv)
         </Btn>
         <label className="flex items-center gap-3 text-sm text-muted-foreground">
-          <Toggle label="Overwrite profile" checked={overwrite} onChange={setOverwrite} />
+          <Toggle label="Overwrite profile" checked={overwrite} disabled={busy} onChange={(value) => {
+            setOverwrite(value);
+            if (files) void run(true, files, value);
+          }} />
           Replace name / headline / summary / location with LinkedIn&apos;s
         </label>
       </div>
@@ -123,6 +138,10 @@ export function ImportPanel() {
         <p className="mt-4 monofont text-[10px] uppercase tracking-[0.2em] text-cyan">
           files: {Object.keys(files).join(' · ')}
         </p>
+      )}
+
+      {files && !preview && !result && !busy && (
+        <Btn className="mt-4" variant="outline" onClick={() => run(true)}>Retry preview</Btn>
       )}
 
       {(preview || result) && (

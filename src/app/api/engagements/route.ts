@@ -1,6 +1,7 @@
 import { randomBytes } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { throttleTransaction } from '@/lib/throttle-transaction';
 import { requireAdminSession } from '@/lib/admin-auth';
 import { getClientIp, hashIp } from '@/lib/auth';
 import { handleError, jsonError, readJson } from '@/lib/api';
@@ -28,47 +29,50 @@ export async function POST(request: NextRequest) {
 
   try {
     const ipHash = hashIp(getClientIp(request.headers));
-    const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    const [mine, all] = await Promise.all([
-      prisma.engagement.count({ where: { ipHash, createdAt: { gt: hourAgo } } }),
-      prisma.engagement.count({ where: { createdAt: { gt: hourAgo } } }),
-    ]);
-    if (mine >= PER_IP_PER_HOUR || all >= GLOBAL_PER_HOUR) {
+    const created = await throttleTransaction('engagement', async (tx) => {
+      const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const [mine, all] = await Promise.all([
+        tx.engagement.count({ where: { ipHash, createdAt: { gt: hourAgo } } }),
+        tx.engagement.count({ where: { createdAt: { gt: hourAgo } } }),
+      ]);
+      if (mine >= PER_IP_PER_HOUR || all >= GLOBAL_PER_HOUR) return null;
+
+      return tx.engagement.create({
+        data:
+          data.kind === 'vapt'
+            ? {
+                kind: 'vapt',
+                name: data.name,
+                email: data.email,
+                company: data.company,
+                message: data.message,
+                services: data.services,
+                target: data.target,
+                timeline: data.timeline,
+                budget: data.budget,
+                nda: data.nda,
+                authorized: data.authorized,
+                ipHash,
+              }
+            : {
+                kind: 'bounty',
+                name: data.name,
+                email: data.email,
+                company: data.company,
+                message: data.message,
+                services: [],
+                programUrl: data.programUrl,
+                platform: data.platform,
+                programType: data.programType,
+                rewards: data.rewards,
+                ipHash,
+              },
+        select: { id: true, kind: true },
+      });
+    });
+    if (!created) {
       return jsonError('Too many requests right now — please try again later or email me directly.', 429);
     }
-
-    const created = await prisma.engagement.create({
-      data:
-        data.kind === 'vapt'
-          ? {
-              kind: 'vapt',
-              name: data.name,
-              email: data.email,
-              company: data.company,
-              message: data.message,
-              services: data.services,
-              target: data.target,
-              timeline: data.timeline,
-              budget: data.budget,
-              nda: data.nda,
-              authorized: data.authorized,
-              ipHash,
-            }
-          : {
-              kind: 'bounty',
-              name: data.name,
-              email: data.email,
-              company: data.company,
-              message: data.message,
-              services: [],
-              programUrl: data.programUrl,
-              platform: data.platform,
-              programType: data.programType,
-              rewards: data.rewards,
-              ipHash,
-            },
-      select: { id: true, kind: true },
-    });
     return NextResponse.json({ success: true, ref: engagementRef(created.kind, created.id) }, { status: 201 });
   } catch (error) {
     console.error('Engagement request failed:', error);

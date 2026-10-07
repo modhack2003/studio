@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { organizeSkills } from '@/lib/skill-groups';
 import { useToast } from '@/hooks/use-toast';
 import { api, errorMessage } from './api-client';
 import { Btn, Field, Panel, TextArea } from './ui';
@@ -22,7 +23,10 @@ export function SkillsPanel() {
   useEffect(() => {
     api<{ languages: string[]; tools: string[]; areas: string[] } | null>('/api/skills')
       .then((d) => {
-        if (d) setSkills({ languages: d.languages.join(', '), tools: d.tools.join(', '), areas: d.areas.join(', ') });
+        if (d) {
+          const grouped = organizeSkills(d);
+          setSkills({ languages: grouped.languages.join(', '), tools: grouped.tools.join(', '), areas: grouped.areas.join(', ') });
+        }
       })
       .catch((e) => toast({ title: 'Could not load skills', description: errorMessage(e), variant: 'destructive' }))
       .finally(() => setLoading(false));
@@ -31,10 +35,11 @@ export function SkillsPanel() {
   const save = async () => {
     setSaving(true);
     try {
-      await api('/api/skills', {
+      const saved = await api<{ languages: string[]; tools: string[]; areas: string[] }>('/api/skills', {
         method: 'PUT',
         body: { languages: split(skills.languages), tools: split(skills.tools), areas: split(skills.areas) },
       });
+      setSkills({ languages: saved.languages.join(', '), tools: saved.tools.join(', '), areas: saved.areas.join(', ') });
       toast({ title: 'Skills saved' });
     } catch (err) {
       toast({ title: 'Not saved', description: errorMessage(err), variant: 'destructive' });
@@ -52,7 +57,7 @@ export function SkillsPanel() {
   return (
     <Panel
       title="Arsenal / skills"
-      description="Comma or new-line separated. LinkedIn skills are imported into “Areas of expertise”."
+      description="Comma or new-line separated. Known LinkedIn skills are grouped automatically; duplicates are removed."
       actions={
         <Btn onClick={save} busy={saving} disabled={loading}>
           Save skills
@@ -65,7 +70,7 @@ export function SkillsPanel() {
             <TextArea
               id={`s-${f.key}`}
               rows={3}
-              disabled={loading}
+              disabled={loading || saving}
               value={skills[f.key]}
               onChange={(e) => setSkills((s) => ({ ...s, [f.key]: e.target.value }))}
             />
