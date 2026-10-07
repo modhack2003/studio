@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { throttleTransaction } from '@/lib/throttle-transaction';
 import { getClientIp, hashIp } from '@/lib/auth';
 import { jsonError, readJson } from '@/lib/api';
 import { contactSchema, zodMessage } from '@/lib/validators';
@@ -19,17 +19,22 @@ export async function POST(request: NextRequest) {
 
   try {
     const ipHash = hashIp(getClientIp(request.headers));
-    const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    const [mine, all] = await Promise.all([
-      prisma.contactMessage.count({ where: { ipHash, createdAt: { gt: hourAgo } } }),
-      prisma.contactMessage.count({ where: { createdAt: { gt: hourAgo } } }),
-    ]);
-    if (mine >= PER_IP_PER_HOUR || all >= GLOBAL_PER_HOUR) {
+    const accepted = await throttleTransaction('contact', async (tx) => {
+      const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const [mine, all] = await Promise.all([
+        tx.contactMessage.count({ where: { ipHash, createdAt: { gt: hourAgo } } }),
+        tx.contactMessage.count({ where: { createdAt: { gt: hourAgo } } }),
+      ]);
+      if (mine >= PER_IP_PER_HOUR || all >= GLOBAL_PER_HOUR) return false;
+
+      const { name, email, subject, message } = parsed.data;
+      await tx.contactMessage.create({ data: { name, email, subject, message, ipHash } });
+      return true;
+    });
+    if (!accepted) {
       return jsonError('Too many messages — please try again later or email me directly.', 429);
     }
 
-    const { name, email, subject, message } = parsed.data;
-    await prisma.contactMessage.create({ data: { name, email, subject, message, ipHash } });
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {
     console.error('Contact form failed:', error);

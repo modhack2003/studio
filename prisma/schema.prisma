@@ -229,3 +229,9 @@ model LoginAttempt {
   @@index([ip, createdAt])
   @@index([createdAt])
 }
+
+/// Shared transaction guard: one document per throttle, independent of server instance.
+model ThrottleGuard {
+  id      String @id @map("_id")
+  version Int    @default(0)
+}

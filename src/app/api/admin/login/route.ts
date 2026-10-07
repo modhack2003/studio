@@ -5,10 +5,9 @@ import {
   SESSION_COOKIE,
   createSession,
   getLoginThrottle,
-  recordLoginAttempt,
+  checkAdminPin,
   requestMeta,
   sessionCookieOptions,
-  verifyAdminPin,
 } from '@/lib/admin-auth';
 import { readJson } from '@/lib/api';
 
@@ -35,16 +34,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const throttle = await getLoginThrottle(ip);
+    const started = Date.now();
+    const { throttle, ok } = await checkAdminPin(pin, ip, userAgent);
     if (!throttle.allowed) return lockedResponse(throttle.retryAfterMs);
 
-    // constant-ish response time regardless of outcome
-    const started = Date.now();
-    const ok = await verifyAdminPin(pin);
+    // Keep the response delay outside the transaction; the attempt is already recorded.
     const elapsed = Date.now() - started;
     if (elapsed < 350) await new Promise((r) => setTimeout(r, 350 - elapsed));
-
-    await recordLoginAttempt(ip, ok, userAgent);
 
     if (!ok) {
       const remaining = Math.max(0, throttle.remaining - 1);
