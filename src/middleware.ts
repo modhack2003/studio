@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { DECOY_PATHS } from '@/lib/shadow-challenges';
 
 function tryBase64Decode(segment: string): string | null {
   try {
@@ -54,6 +55,12 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAuthenticated = hasValidSession(request);
+
+  if ((DECOY_PATHS as readonly string[]).includes(pathname)) {
+    const response = addSecurityHeaders(NextResponse.next());
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return response;
+  }
 
   // Allow public access portal (obfuscated)
   if (pathname === '/b1kr4m-5h4d0w') {
