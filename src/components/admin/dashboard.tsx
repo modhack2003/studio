@@ -154,7 +154,7 @@ const COLLECTIONS: Record<string, CollectionEditorProps> = {
   },
   blog: {
     title: 'Blog posts',
-    description: 'Only published posts appear on the site. Content supports simple Markdown (# headings, **bold**, lists, `code`, links).',
+    description: 'Drafts are hidden from the homepage and /blog. To make a post visible, open Edit, enable Published, and Save. Content supports simple Markdown (# headings, **bold**, lists, `code`, links).',
     endpoint: '/api/blog',
     addLabel: 'New post',
     fields: [
@@ -166,7 +166,7 @@ const COLLECTIONS: Record<string, CollectionEditorProps> = {
       { name: 'tags', label: 'Tags', type: 'tags', wide: true },
     ],
     itemTitle: (i: Item) => String(i.title),
-    itemMeta: (i: Item) => `${i.published ? 'Published' : 'Draft'} · /blog/${i.slug}`,
+    itemMeta: (i: Item) => `${i.published ? 'Published · visible on site' : 'Draft · hidden from site'} · /blog/${i.slug}`,
   },
 };
 
