@@ -37,7 +37,7 @@ export function InsightsPanel({ onImported }: { onImported: () => void }) {
         <Btn busy={busy} onClick={() => void sync(false)}>Sync now</Btn>
         <Btn disabled={busy} variant="outline" onClick={() => void sync(true)}>Import past month</Btn>
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">{state.autoPublish ? 'New briefs publish automatically. Past-month imports always remain drafts.' : 'New briefs are saved as drafts for review.'} Last success: {formatDate(state.lastSuccess, { dateStyle: 'medium', timeStyle: 'short' })} · {state.lastCreated} added.{state.running && ' An import is running.'}</p>
+      <p className="mt-3 text-xs text-muted-foreground">{state.autoPublish ? 'Future daily briefs publish automatically. Existing drafts and past-month imports need publishing in the editor below.' : 'New briefs are saved as drafts and stay hidden from the site. To show one, open Edit below, enable Published, and Save.'} Last success: {formatDate(state.lastSuccess, { dateStyle: 'medium', timeStyle: 'short' })} · {state.lastCreated} added.{state.running && ' An import is running.'}</p>
       {state.lastError && <p role="alert" className="mt-2 text-xs text-destructive">{state.lastError}</p>}
     </>}
     {error && <p role="alert" className="mt-2 text-xs text-destructive">{error}</p>}

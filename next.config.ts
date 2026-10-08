@@ -48,6 +48,9 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   // Handle Prisma client generation
   serverExternalPackages: ['@prisma/client', 'prisma'],
+  async redirects() {
+    return [{ source: '/blogs/:path*', destination: '/blog/:path*', permanent: true }];
+  },
   async headers() {
     return [
       {
