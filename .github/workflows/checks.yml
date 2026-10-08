@@ -32,4 +32,8 @@ jobs:
         run: npx tsx scripts/test-throttles.ts
         env:
           THROTTLE_TEST_DATABASE_URL: mongodb://127.0.0.1:27017/studio_throttle_test?replicaSet=rs0
+      - name: Verify Security Insights imports with MongoDB
+        run: npx tsx scripts/test-insights.ts
+        env:
+          INSIGHTS_TEST_DATABASE_URL: mongodb://127.0.0.1:27017/studio_insights_test?replicaSet=rs0
       - run: npm run build

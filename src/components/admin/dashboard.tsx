@@ -23,6 +23,7 @@ import { api } from './api-client';
 import { CollectionEditor, type CollectionEditorProps } from './collection-editor';
 import { ProfilePanel } from './profile-panel';
 import { SkillsPanel } from './skills-panel';
+import { InsightsPanel } from './insights-panel';
 import { GitHubPanel } from './github-panel';
 import { InboxPanel } from './inbox-panel';
 import { ImportPanel } from './import-panel';
@@ -208,6 +209,7 @@ interface SessionInfo {
 }
 
 export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
+  const [blogVersion, setBlogVersion] = useState(0);
   const [tab, setTab] = useState<TabId>('profile');
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [unread, setUnread] = useState(0);
@@ -315,7 +317,8 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           {tab === 'requests' && <RequestsPanel onNewCountChange={setNewRequests} />}
           {tab === 'import' && <ImportPanel />}
           {tab === 'security' && <SecurityPanel onLogout={onLogout} />}
-          {tab in COLLECTIONS && <CollectionEditor key={tab} {...COLLECTIONS[tab]} />}
+          {tab === 'blog' && <InsightsPanel onImported={() => setBlogVersion(v => v + 1)} />}
+          {tab in COLLECTIONS && <CollectionEditor key={`${tab}-${blogVersion}`} {...COLLECTIONS[tab]} />}
         </div>
       </div>
     </div>

@@ -247,3 +247,26 @@ model GitHubSyncState {
   lockedUntil DateTime?
   lockToken   String?
 }
+
+/// Scheduled Security Insights settings and shared import lease.
+model InsightSyncState {
+  id           String @id @map("_id")
+  enabled      Boolean @default(true)
+  autoPublish  Boolean @default(false)
+  lastSuccess  DateTime?
+  lastAttempt  DateTime?
+  lastError    String?
+  lockedUntil  DateTime?
+  lockToken    String?
+  backfilledAt DateTime?
+  lastCreated  Int @default(0)
+}
+
+/// Durable deduplication, including posts deleted by an editor.
+model InsightImport {
+  id         String @id @map("_id")
+  postSlug   String
+  sourceDate DateTime
+  importedAt DateTime @default(now())
+  backfill   Boolean @default(false)
+}
