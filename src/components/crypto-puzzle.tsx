@@ -1,237 +1,80 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { Lock, Eye, EyeOff, Terminal, Key, Shield } from 'lucide-react';
-import PixelCard from './pixel-card';
+import { useRef, useState, type FormEvent } from 'react';
+import Link from 'next/link';
+import { Eye, Flag, Lock, RotateCcw } from 'lucide-react';
+import { SHADOW_TRACKS, type ShadowTrack } from '@/lib/shadow-challenges';
 
-interface CryptoPuzzleProps {
-  onSuccess: () => void;
-}
-
-export function CryptoPuzzle({ onSuccess }: CryptoPuzzleProps) {
-  const [currentLevel, setCurrentLevel] = useState(1);
-  const [userInput, setUserInput] = useState('');
-  const [showHint, setShowHint] = useState(false);
+export function CryptoPuzzle({ track = 'cipher' }: { track?: ShadowTrack }) {
+  const challenge = SHADOW_TRACKS[track];
+  const [level, setLevel] = useState(1);
+  const [answer, setAnswer] = useState('');
+  const [hint, setHint] = useState(false);
   const [attempts, setAttempts] = useState(0);
-  const [isChecking, setIsChecking] = useState(false);
-  const { toast } = useToast();
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const [flag, setFlag] = useState('');
+  const pending = useRef(false);
+  const input = useRef<HTMLInputElement>(null);
+  const puzzle = challenge.puzzles[level - 1];
+  const solved = flag ? challenge.puzzles.length : level - 1;
 
-  // Puzzle metadata only — solutions stay server-side
-  const puzzles = [
-    {
-      title: "Level 1: ROT13 Cipher",
-      description: "Decode this ROT13 encrypted message:",
-      cipher: "nqzva",
-      hint: "ROT13 shifts each letter by 13 positions in the alphabet",
-    },
-    {
-      title: "Level 2: Base64 Decode",
-      description: "Decode this Base64 string:",
-      cipher: "YWRtaW4=",
-      hint: "Base64 is a binary-to-text encoding scheme",
-    },
-    {
-      title: "Level 3: Hex Decode",
-      description: "Decode this hexadecimal string:",
-      cipher: "61646d696e",
-      hint: "Each pair of hex digits represents one ASCII character",
-    },
-    {
-      title: "Level 4: Caesar Cipher",
-      description: "Decode this Caesar cipher (shift by 3):",
-      cipher: "dplq",
-      hint: "Each letter is shifted 3 positions forward in the alphabet",
-    },
-    {
-      title: "Level 5: Binary Decode",
-      description: "Decode this binary string:",
-      cipher: "01100001 01100100 01101101 01101001 01101110",
-      hint: "Each 8-bit binary number represents one ASCII character",
-    }
-  ];
-
-  const currentPuzzle = puzzles[currentLevel - 1];
-
-  const checkAnswer = async () => {
-    if (isChecking || !userInput.trim()) return;
-    
-    setIsChecking(true);
-    setAttempts(attempts + 1);
-
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (pending.current || !answer.trim() || flag) return;
+    pending.current = true;
+    setBusy(true);
+    setMessage('');
     try {
       const response = await fetch('/api/ctf/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ level: currentLevel, answer: userInput }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ track, level, answer }), signal: AbortSignal.timeout(10000),
       });
-
       const result = await response.json();
-
-      if (!response.ok) {
-        toast({
-          title: "Error",
-          description: result.error || "Something went wrong",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (result.correct) {
-        if (result.isLastLevel) {
-          toast({
-            title: "🎉 Puzzle Complete!",
-            description: "All levels solved! Access granted.",
-          });
-          onSuccess();
-        } else {
-          setCurrentLevel(currentLevel + 1);
-          setUserInput('');
-          setAttempts(0);
-          setShowHint(false);
-          toast({
-            title: "Correct!",
-            description: `Level ${currentLevel} completed. Moving to level ${currentLevel + 1}...`,
-          });
-        }
+      if (!response.ok) { setMessage(result.error || 'Verification unavailable. Try again.'); return; }
+      if (!result.correct) {
+        setAttempts((value) => value + 1);
+        if (attempts >= 2) setHint(true);
+        setMessage('Signal mismatch. Try another answer.');
+      } else if (result.isLastLevel && result.flag) {
+        setFlag(result.flag);
+        setAnswer('');
       } else {
-        toast({
-          title: "Incorrect",
-          description: `Wrong answer. Attempts: ${attempts + 1}`,
-          variant: "destructive",
-        });
-        
-        if (attempts >= 2) {
-          setShowHint(true);
-        }
+        setLevel((value) => value + 1);
+        setAnswer(''); setHint(false); setAttempts(0);
+        setMessage('Lock opened. Next signal ready.');
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Could not verify answer. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsChecking(false);
-    }
+    } catch { setMessage('Uplink interrupted. Your progress is intact; try again.'); }
+    finally { pending.current = false; setBusy(false); }
   };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      checkAnswer();
-    }
-  };
+  const reset = () => { setLevel(1); setAnswer(''); setHint(false); setAttempts(0); setFlag(''); setMessage(''); };
 
   return (
-    <PixelCard className="w-full max-w-2xl">
-      <div className="bg-transparent p-6 rounded-sm">
-        <CardHeader className="text-center">
-          <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit mb-4">
-            <Shield className="h-8 w-8 text-primary" />
-          </div>
-          <CardTitle className="text-2xl font-headline text-primary">
-            🔐 Cryptographic Challenge
-          </CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Prove your hacking skills by solving these cryptographic puzzles
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent className="space-y-6">
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Progress</span>
-              <span>{currentLevel} / {puzzles.length}</span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-2">
-              <div 
-                className="bg-primary h-2 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${(currentLevel / puzzles.length) * 100}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Current Puzzle */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Terminal className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-code text-primary">{currentPuzzle.title}</h3>
-            </div>
-            
-            <p className="text-muted-foreground">{currentPuzzle.description}</p>
-            
-            <div className="bg-muted/50 p-4 rounded-lg border border-primary/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Key className="h-4 w-4 text-primary" />
-                <span className="text-sm font-code text-primary">Ciphertext:</span>
-              </div>
-              <code className="text-lg font-mono break-all">{currentPuzzle.cipher}</code>
-            </div>
-
-            {/* Hint */}
-            {showHint && (
-              <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <Eye className="h-4 w-4 text-yellow-600" />
-                  <span className="text-sm font-semibold text-yellow-600">Hint:</span>
-                </div>
-                <p className="text-sm text-yellow-700">{currentPuzzle.hint}</p>
-              </div>
-            )}
-
-            {/* Input */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Your Answer:</label>
-              <div className="flex gap-2">
-                <Input
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Enter decoded text..."
-                  className="font-mono"
-                  disabled={isChecking}
-                />
-                <Button onClick={checkAnswer} disabled={!userInput.trim() || isChecking}>
-                  <Lock className="h-4 w-4 mr-2" />
-                  {isChecking ? 'Checking...' : 'Submit'}
-                </Button>
-              </div>
-            </div>
-
-            {/* Hint Toggle */}
-            <div className="flex justify-between items-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowHint(!showHint)}
-                className="text-muted-foreground"
-              >
-                {showHint ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
-                {showHint ? 'Hide Hint' : 'Show Hint'}
-              </Button>
-              
-              <div className="text-sm text-muted-foreground">
-                Attempts: {attempts}
-              </div>
-            </div>
-          </div>
-
-          {/* Instructions */}
-          <div className="bg-muted/30 p-4 rounded-lg border border-primary/10">
-            <h4 className="font-semibold text-sm mb-2">💡 Instructions:</h4>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Solve each cryptographic puzzle in order</li>
-              <li>• Enter the decoded plaintext (lowercase)</li>
-              <li>• Use hints if you get stuck (after 3 attempts)</li>
-              <li>• Complete all levels to gain admin access</li>
-            </ul>
-          </div>
-        </CardContent>
+    <section className="overflow-hidden border border-signal/50 bg-card">
+      <div className="flex items-center justify-between gap-4 border-b border-signal/30 px-5 py-3 monofont text-[10px] uppercase tracking-[0.2em] text-muted-foreground"><span>Access protocol // {track}</span><span className="text-cyan">{flag ? 'Signal recovered' : 'Awaiting response'}</span></div>
+      <div className="grid md:grid-cols-[220px_1fr]">
+        <aside className="border-b border-signal/30 p-6 md:border-b-0 md:border-r">
+          <Lock className="mb-4 h-8 w-8 text-signal" />
+          <p className="monofont text-[10px] uppercase tracking-widest text-muted-foreground">Sequence status</p>
+          <p className="mt-2 font-display text-4xl text-bone">{String(solved).padStart(2, '0')}<span className="text-xl text-muted-foreground"> / {String(challenge.puzzles.length).padStart(2, '0')}</span></p>
+          <div role="progressbar" aria-label="Locks solved" aria-valuemin={0} aria-valuemax={challenge.puzzles.length} aria-valuenow={solved} className="mt-4 h-1 bg-signal/15"><div className="h-full bg-cyan transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${solved / challenge.puzzles.length * 100}%` }} /></div>
+          <ol className="mt-6 space-y-3 monofont text-[10px] uppercase tracking-wider text-muted-foreground">{challenge.puzzles.map((item, index) => <li key={item.title} aria-current={!flag && index === level - 1 ? 'step' : undefined} className={index < solved ? 'text-cyan' : index === level - 1 ? 'text-bone' : ''}>{String(index + 1).padStart(2, '0')}{' // '}{item.title} {index < solved ? '✓' : ''}</li>)}</ol>
+        </aside>
+        <div className="min-w-0 p-6 sm:p-8">
+          <h1 className="font-display text-3xl font-bold uppercase text-bone sm:text-4xl">{challenge.title}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{challenge.subtitle}</p>
+          {flag ? <div className="mt-8 space-y-5" role="status"><Flag className="h-8 w-8 text-cyan" /><h2 className="font-display text-2xl uppercase text-cyan">Transmission complete</h2><code className="block break-all border border-cyan/40 bg-cyan/5 p-4 text-sm text-bone">{flag}</code><p className="text-sm text-muted-foreground">You reached the end of this simulation. The terminal has no administrative privileges.</p><div className="flex flex-wrap gap-4"><button onClick={reset} className="flex items-center gap-2 monofont text-xs text-signal"><RotateCcw size={14} /> Restart sequence</button><Link href={track === 'archive' ? '/root' : '/admin/backup'} className="monofont text-xs text-cyan">Follow another signal →</Link></div></div> : <>
+            <h2 className="mt-8 monofont text-sm uppercase tracking-wider text-signal">Lock {level}{' // '}{puzzle.title}</h2>
+            <p className="mt-3 text-sm text-muted-foreground">{puzzle.description}</p>
+            <pre className="mt-5 whitespace-pre-wrap break-all border border-signal/30 bg-ink p-5 font-mono text-sm leading-7 text-cyan sm:text-base">{puzzle.cipher}</pre>
+            <form onSubmit={submit} className="mt-6 space-y-3"><label htmlFor="shadow-answer" className="block monofont text-xs uppercase tracking-widest text-muted-foreground">Decoded answer</label><div className="flex flex-col gap-3 sm:flex-row"><input ref={input} id="shadow-answer" value={answer} onChange={(e) => setAnswer(e.target.value)} required maxLength={128} autoComplete="off" autoCapitalize="none" spellCheck={false} disabled={busy} aria-describedby="shadow-status" className="min-w-0 flex-1 border border-signal/40 bg-ink px-4 py-3 font-mono text-sm text-bone outline-none focus:border-cyan" placeholder="Recover the plaintext…" /><button disabled={busy || !answer.trim()} className="bg-signal px-5 py-3 monofont text-xs uppercase tracking-widest text-ink transition-colors hover:bg-bone disabled:opacity-40">{busy ? 'Checking…' : '>_ Verify'}</button></div></form>
+            <p id="shadow-status" role="status" aria-live="polite" className="mt-3 min-h-6 text-sm text-bone/80">{message}</p>
+            <div className="mt-2 flex justify-between gap-3"><button aria-expanded={hint} onClick={() => setHint((value) => !value)} className="flex items-center gap-2 monofont text-xs text-cyan"><Eye size={14} /> {hint ? 'Hide clue' : 'Reveal clue'}</button><span className="monofont text-[10px] text-muted-foreground">ATTEMPTS // {attempts}</span></div>
+            {hint && <p className="mt-4 border-l-2 border-cyan bg-cyan/5 p-4 text-sm text-bone/80">{puzzle.hint}</p>}
+            <p className="mt-7 border-t border-signal/20 pt-4 monofont text-[10px] leading-5 text-muted-foreground">Decode in order. Answers ignore letter case and outer whitespace. A clue appears after three wrong answers.</p>
+          </>}
+        </div>
       </div>
-    </PixelCard>
+    </section>
   );
 }

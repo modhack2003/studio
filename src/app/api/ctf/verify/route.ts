@@ -1,56 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { SHADOW_TRACKS } from '@/lib/shadow-challenges';
 
-// Puzzles with server-side solutions (never exposed to client)
-const PUZZLES = [
-  { level: 1, solution: "admin" },
-  { level: 2, solution: "admin" },
-  { level: 3, solution: "admin" },
-  { level: 4, solution: "admin" },
-  { level: 5, solution: "admin" },
-];
-
-// Rate limiting for puzzle attempts
-const puzzleAttempts = new Map<string, { count: number; resetTime: number }>();
-const MAX_PUZZLE_ATTEMPTS = 20; // per minute
-const WINDOW_MS = 60 * 1000;
+const solutions = {
+  cipher: ['shadow', 'crow', 'genjutsu', 'cipher', 'escape'],
+  archive: ['vault', 'archive', 'echo'],
+  signal: ['root', 'spectre', 'trail'],
+} as const;
+const flags = { cipher: 'BIKRAM{the_shadow_was_a_decoy}', archive: 'BIKRAM{no_secrets_in_the_archive}', signal: 'BIKRAM{root_of_an_illusion}' };
+const schema = z.object({
+  track: z.enum(['cipher', 'archive', 'signal']).default('cipher'),
+  level: z.number().int().min(1),
+  answer: z.string().trim().min(1).max(128),
+});
+// Best-effort per-instance abuse control, not an authentication boundary.
+const attempts = new Map<string, { count: number; until: number }>();
+const WINDOW_MS = 60000;
+const MAX_KEYS = 2048;
 
 export async function POST(request: NextRequest) {
+  const now = Date.now();
+  for (const [key, entry] of attempts) if (entry.until <= now) attempts.delete(key);
+  const ip = (request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown').slice(0, 100);
+  const entry = attempts.get(ip);
+  if ((entry && entry.count >= 20) || (!entry && attempts.size >= MAX_KEYS)) {
+    return NextResponse.json({ error: 'Too many attempts. Wait one minute and retry.' }, { status: 429, headers: { 'Retry-After': '60', 'Cache-Control': 'no-store' } });
+  }
+  attempts.set(ip, { count: (entry?.count || 0) + 1, until: entry?.until || now + WINDOW_MS });
   try {
-    const clientIP = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const now = Date.now();
-
-    // Rate limiting
-    const entry = puzzleAttempts.get(clientIP);
-    if (entry && now < entry.resetTime) {
-      if (entry.count >= MAX_PUZZLE_ATTEMPTS) {
-        return NextResponse.json(
-          { error: 'Too many attempts. Please wait.' },
-          { status: 429 }
-        );
-      }
-      entry.count++;
-    } else {
-      puzzleAttempts.set(clientIP, { count: 1, resetTime: now + WINDOW_MS });
-    }
-
-    const { level, answer } = await request.json();
-
-    if (typeof level !== 'number' || level < 1 || level > PUZZLES.length) {
-      return NextResponse.json({ error: 'Invalid level' }, { status: 400 });
-    }
-
-    if (typeof answer !== 'string' || !answer.trim()) {
-      return NextResponse.json({ error: 'Answer is required' }, { status: 400 });
-    }
-
-    const puzzle = PUZZLES[level - 1];
-    const isCorrect = answer.toLowerCase().trim() === puzzle.solution;
-
-    return NextResponse.json({
-      correct: isCorrect,
-      isLastLevel: level === PUZZLES.length,
-    });
+    const text = await request.text();
+    if (new TextEncoder().encode(text).length > 2048) return NextResponse.json({ error: 'Answer payload too large.' }, { status: 413 });
+    const parsed = schema.safeParse(JSON.parse(text));
+    if (!parsed.success) return NextResponse.json({ error: 'Provide a valid track, integer level and answer (up to 128 characters).' }, { status: 400 });
+    const { track, level, answer } = parsed.data;
+    if (level > SHADOW_TRACKS[track].puzzles.length) return NextResponse.json({ error: 'Invalid level.' }, { status: 400 });
+    const correct = answer.toLowerCase() === solutions[track][level - 1];
+    const isLastLevel = level === solutions[track].length;
+    // No sessions, credentials, redirects or database writes: these are game flags only.
+    return NextResponse.json({ correct, isLastLevel, ...(correct && isLastLevel ? { flag: flags[track] } : {}) }, { headers: { 'Cache-Control': 'no-store' } });
   } catch {
-    return NextResponse.json({ error: 'Bad request' }, { status: 400 });
+    return NextResponse.json({ error: 'Malformed challenge request.' }, { status: 400 });
   }
 }
