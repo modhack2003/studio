@@ -38,3 +38,20 @@ test('preserves settings of a recreated repo and does not clean up after failed 
 test('invalid explicit usernames do not silently sync a different account', async () => {
   await expect(resolveGitHubUsername(db, 'https://evilgithub.com/owner')).rejects.toMatchObject({ status: 400 });
 });
+
+test.each([
+  ['https://storage.public.blob.vercel-storage.com/profile/photo.jpg', false],
+  ['https://example.com/my-photo.png', false],
+  ['https://avatars.githubusercontent.com/u/123?v=4', true],
+  ['', true],
+])('profile sync preserves custom photo %s', async (avatarUrl, shouldUpdate) => {
+  const personalData = {
+    findFirst: jest.fn().mockResolvedValue({ id: 'profile', avatarUrl, location: 'Kolkata', github: 'https://github.com/Owner', bio: 'Bio' }),
+    update: jest.fn(),
+  };
+  api.getUser.mockResolvedValue({ login: 'Owner', avatar_url: 'https://avatars.githubusercontent.com/u/456?v=4' });
+  repos.findMany.mockResolvedValue([]);
+  await syncGitHub({ ...db, personalData } as unknown as PrismaClient, { username: 'Owner' });
+  if (shouldUpdate) expect(personalData.update).toHaveBeenCalledWith(expect.objectContaining({ data: { avatarUrl: 'https://avatars.githubusercontent.com/u/456?v=4' } }));
+  else expect(personalData.update).not.toHaveBeenCalled();
+});

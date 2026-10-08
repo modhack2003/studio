@@ -42,6 +42,8 @@ export function ProfilePanel() {
   const [reload, setReload] = useState(0);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const photoRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -72,7 +74,7 @@ export function ProfilePanel() {
 
   const save = async (e?: FormEvent) => {
     e?.preventDefault();
-    if (loading || loadError || saving) return;
+    if (loading || loadError || saving || photoUploading) return;
     setSaving(true);
     try {
       await api('/api/personal-data', { method: 'PUT', body: profile });
@@ -101,6 +103,28 @@ export function ProfilePanel() {
     }
   };
 
+  const uploadPhoto = async (file: File) => {
+    if (photoUploading || saving) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 4 * 1024 * 1024 || !file.size) {
+      toast({ title: 'Choose a JPG, PNG or WebP photo under 4 MB', variant: 'destructive' });
+      if (photoRef.current) photoRef.current.value = '';
+      return;
+    }
+    setPhotoUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const { avatarUrl } = await api<{ avatarUrl: string }>('/api/profile/photo', { method: 'POST', formData: fd });
+      setProfile((p) => ({ ...p, avatarUrl }));
+      toast({ title: 'Photo uploaded', description: 'Saved. The public site refreshes within a minute.' });
+    } catch (err) {
+      toast({ title: 'Photo upload failed', description: errorMessage(err), variant: 'destructive' });
+    } finally {
+      setPhotoUploading(false);
+      if (photoRef.current) photoRef.current.value = '';
+    }
+  };
+
   if (loadError) return (
     <Panel title="Profile" description="Could not load your profile. Retry before editing.">
       <Btn variant="outline" onClick={() => setReload((value) => value + 1)}>Retry loading</Btn>
@@ -115,7 +139,7 @@ export function ProfilePanel() {
         title="Profile"
         description={exists ? 'Shown in the hero, about section and footer.' : 'No profile yet — fill this in and save to create it.'}
         actions={
-          <Btn onClick={() => save()} busy={saving}>
+          <Btn onClick={() => save()} busy={saving} disabled={photoUploading}>
             {exists ? 'Save changes' : 'Create profile'}
           </Btn>
         }
@@ -142,8 +166,8 @@ export function ProfilePanel() {
           <Field label="LinkedIn URL" htmlFor="p-linkedin">
             <TextInput id="p-linkedin" value={profile.linkedin} onChange={set('linkedin')} placeholder="https://www.linkedin.com/in/…" />
           </Field>
-          <Field label="Avatar image URL" htmlFor="p-avatar" hint="Filled automatically by the GitHub sync.">
-            <TextInput id="p-avatar" value={profile.avatarUrl} onChange={set('avatarUrl')} />
+          <Field label="Avatar image URL" htmlFor="p-avatar" hint="Upload a photo below or paste a public image URL. Custom photos are preserved during GitHub sync.">
+            <TextInput id="p-avatar" disabled={photoUploading} value={profile.avatarUrl} onChange={set('avatarUrl')} />
           </Field>
           <Field label="Resume URL" htmlFor="p-resume" hint="Upload a PDF below or paste any public link (e.g. Google Drive).">
             <TextInput id="p-resume" value={profile.resumeUrl} onChange={set('resumeUrl')} />
@@ -164,6 +188,20 @@ export function ProfilePanel() {
           </Field>
           <button type="submit" className="hidden" />
         </form>
+      </Panel>
+
+      <Panel title="Profile photo" description="JPG, PNG or WebP, up to 4 MB. Uploading saves the photo immediately.">
+        <div className="flex flex-wrap items-center gap-4">
+          {profile.avatarUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={profile.avatarUrl} alt="Current profile photo" className="h-20 w-20 border border-signal/40 object-cover" />
+          )}
+          <input ref={photoRef} aria-label="Choose profile photo" type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => e.target.files?.[0] && uploadPhoto(e.target.files[0])} />
+          <Btn variant="outline" onClick={() => photoRef.current?.click()} busy={photoUploading} disabled={!exists || saving}>
+            <Upload className="h-3.5 w-3.5" /> Upload photo
+          </Btn>
+          {!exists && <span className="text-xs text-muted-foreground">Create the profile first.</span>}
+        </div>
       </Panel>
 
       <Panel title="Resume PDF" description="Stored in Vercel Blob (needs BLOB_READ_WRITE_TOKEN). Max 4 MB.">

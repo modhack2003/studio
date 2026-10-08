@@ -86,7 +86,13 @@ export async function syncGitHub(
     const personal = await prisma.personalData.findFirst();
     if (personal) {
       const data: Record<string, string> = {};
-      if (user.avatar_url && personal.avatarUrl !== user.avatar_url) data.avatarUrl = user.avatar_url;
+      // Refresh GitHub avatars, but preserve uploaded/custom portraits.
+      let isGitHubAvatar = false;
+      try {
+        const host = new URL(personal.avatarUrl || '').hostname;
+        isGitHubAvatar = host === 'avatars.githubusercontent.com' || host === 'github.com';
+      } catch { /* Empty or custom values are handled below. */ }
+      if (user.avatar_url && (!personal.avatarUrl || isGitHubAvatar) && personal.avatarUrl !== user.avatar_url) data.avatarUrl = user.avatar_url;
       if (!personal.location && user.location) data.location = titleCase(user.location);
       if (!personal.github) data.github = user.html_url;
       if (!personal.bio && user.bio) data.bio = user.bio.trim();
