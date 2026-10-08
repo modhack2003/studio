@@ -46,19 +46,19 @@ export function AboutSection({
       {/* portrait */}
       <Reveal className="lg:col-span-5">
         <TiltCard className="mx-auto max-w-md" max={10}>
-          <div className="relative aspect-[4/5] overflow-hidden border border-signal/60 bg-ink">
+          <div tabIndex={0} aria-label={`${name} portrait — hover or focus to view original colors`} className="group/portrait relative aspect-[4/5] overflow-hidden border border-signal/60 bg-ink outline-none focus-visible:ring-2 focus-visible:ring-cyan">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={avatar}
               alt={name}
-              className="absolute inset-0 h-full w-full object-cover grayscale contrast-125"
+              className="absolute inset-0 h-full w-full object-cover grayscale contrast-125 transition-[filter] duration-700 ease-out group-hover/portrait:grayscale-0 group-hover/portrait:contrast-100 group-focus/portrait:grayscale-0 group-focus/portrait:contrast-100 motion-reduce:transition-none"
               loading="lazy"
             />
             {/* red duotone */}
-            <div className="absolute inset-0 bg-signal mix-blend-multiply" />
+            <div className="pointer-events-none absolute inset-0 bg-signal mix-blend-multiply transition-opacity duration-700 ease-out group-hover/portrait:opacity-0 group-focus/portrait:opacity-0 motion-reduce:transition-none" />
             <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/20 to-transparent" />
-            <div className="scanline absolute inset-0 opacity-60" />
-            <div className="animate-scan absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-transparent via-cyan/20 to-transparent" />
+            <div className="pointer-events-none scanline absolute inset-0 opacity-60 transition-opacity duration-700 group-hover/portrait:opacity-0 group-focus/portrait:opacity-0 motion-reduce:transition-none" />
+            <div className="pointer-events-none absolute inset-0 transition-opacity duration-700 group-hover/portrait:opacity-0 group-focus/portrait:opacity-0 motion-reduce:transition-none"><div className="animate-scan absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-transparent via-cyan/20 to-transparent" /></div>
 
             {/* HUD */}
             <div className="absolute left-3 top-3 monofont text-[10px] uppercase tracking-[0.25em] text-bone">
